@@ -1,0 +1,17 @@
+.DS_Store
+.ruff_cache/
+.superpowers/
+.worktrees/
+android/.gradle/
+android/.kotlin/
+android/**/build/
+android/local.properties
+convert/.venv/
+convert/__pycache__/
+convert/**/*.pyc
+apps/android/.gradle/
+apps/android/**/build/
+apps/android/local.properties
+tooling/model-convert/.venv/
+tooling/model-convert/__pycache__/
+tooling/model-convert/**/*.pyc

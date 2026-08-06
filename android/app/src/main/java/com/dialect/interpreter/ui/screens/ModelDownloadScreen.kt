@@ -153,7 +153,7 @@ fun ModelDownloadScreen(
 
             if (!isExtracting) {
                 Text(
-                    "模型已预装在应用中\n首次启动需要解压初始化",
+                    "ASR、Hy-MT、TTS 模型已随应用提供\n首次启动需要解压并校验",
                     style = MaterialTheme.typography.bodyMedium,
                     color = secondary,
                     textAlign = TextAlign.Center
@@ -180,7 +180,15 @@ fun ModelDownloadScreen(
                 Button(
                     onClick = {
                         isExtracting = true
-                        scope.launch { modelRepository.extractBundledModels() }
+                        scope.launch {
+                            try {
+                                modelRepository.extractBundledModels()
+                            } catch (e: Exception) {
+                                // Reset the flag so the user can retry after a failure;
+                                // otherwise the button stays permanently disabled.
+                                isExtracting = false
+                            }
+                        }
                     },
                     enabled = !isExtracting,
                     modifier = Modifier

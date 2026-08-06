@@ -35,6 +35,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        (application as DialectApp).modelManager.releaseAll()
+        // Only tear down app-scoped ONNX sessions when the Activity is truly
+        // finishing. On a configuration change (rotation) the retained ViewModel
+        // still holds live references to the pipeline's sessions; releasing them
+        // here caused use-after-close crashes on every rotation.
+        if (isFinishing) {
+            (application as DialectApp).container.modelManager.releaseAll()
+        }
     }
 }

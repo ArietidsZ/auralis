@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,10 +27,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
+import com.dialect.interpreter.DialectApp
 import com.dialect.interpreter.inference.*
 import com.dialect.interpreter.inference.PipelineOrchestrator.PipelineState
 import com.dialect.interpreter.audio.AudioPlayer
 import com.dialect.interpreter.audio.AudioRecorder
+import com.dialect.interpreter.data.DialectCatalogLoader
 import com.dialect.interpreter.ui.components.*
 import com.dialect.interpreter.ui.theme.*
 import java.text.SimpleDateFormat
@@ -44,10 +48,17 @@ data class ChatMessage(
     val timestamp: Long = System.currentTimeMillis(),
     val asrLatencyMs: Long = 0,
     val ttsLatencyMs: Long = 0,
+    val mtLatencyMs: Long = 0,
     val playbackLatencyMs: Long = 0,
     val ttsRtf: Float = 0f,
+    val mtRuntime: String = "",
     val isProcessing: Boolean = false
 )
+
+private val SourceLanguageOptions = AsrEngine.CHINESE_DIALECTS +
+    AsrEngine.SUPPORTED_LANGUAGES.filterNot { (_, code) -> code == "Chinese" }
+private val TargetLanguageOptions = listOf("普通话" to "Chinese") +
+    AsrEngine.SUPPORTED_LANGUAGES.filterNot { (_, code) -> code == "Chinese" }
 
 /**
  * Main interpretation screen — minimalistic chat UI.
@@ -61,34 +72,46 @@ data class ChatMessage(
 fun InterpretScreen(
     modelManager: OnnxModelManager,
     onNavigateToProfile: () -> Unit,
-    onNavigateToSettings: () -> Unit,
-    viewModel: InterpretViewModel = viewModel()
+    onNavigateToSettings: () -> Unit
 ) {
-    val scope = rememberCoroutineScope()
+    val appContext = LocalContext.current.applicationContext as DialectApp
+    val viewModel: InterpretViewModel = viewModel(
+        factory = remember(modelManager, appContext) {
+            InterpretViewModelFactory(
+                pipelineFactory = { appContext.container.createPipeline() }
+            )
+        }
+    )
     val listState = rememberLazyListState()
 
+    // Load the canonical dialect catalog from the bundled asset (single source of
+    // truth; see shared/dialect-catalog/catalog.json). Fall back to the model's
+    // built-in lists only if the asset is unavailable.
+    val catalog = remember(appContext) {
+        runCatching {
+            DialectCatalogLoader(appContext).load()
+        }.getOrNull()
+    }
+    val sourceOptions = catalog?.let { DialectCatalogLoader.sourceOptions(it) } ?: SourceLanguageOptions
+    val targetOptions = catalog?.let { DialectCatalogLoader.targetOptions(it) } ?: TargetLanguageOptions
+
     val messages by viewModel.messages.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
-    var sourceDialect by remember { mutableStateOf("四川话") }
-    var targetLanguage by remember { mutableStateOf("普通话") }
-    var showDialectSheet by remember { mutableStateOf(false) }
+    var sourceDialect by rememberSaveable { mutableStateOf("四川话") }
+    var targetLanguage by rememberSaveable { mutableStateOf("普通话") }
+    var showDialectSheet by rememberSaveable { mutableStateOf(false) }
 
-    val targetLanguageCode = AsrEngine.SUPPORTED_LANGUAGES
+    val targetLanguageCode = targetOptions
         .firstOrNull { it.first == targetLanguage }
         ?.second ?: "Chinese"
+    val sourceLanguageCode = sourceOptions
+        .firstOrNull { it.first == sourceDialect }
+        ?.second ?: "Chinese"
 
-    val pipeline = remember {
-        PipelineOrchestrator(
-            asrEngine = AsrEngine(modelManager),
-            ttsEngine = TtsEngine(modelManager),
-            audioRecorder = AudioRecorder(),
-            audioPlayer = AudioPlayer()
-        )
-    }
-
-    val pipelineState by pipeline.state.collectAsState()
-    val amplitude by pipeline.amplitude.collectAsState()
-    val telemetry by pipeline.telemetry.collectAsState()
+    val pipelineState by viewModel.pipelineState.collectAsState()
+    val amplitude by viewModel.amplitude.collectAsState()
+    val telemetry by viewModel.telemetry.collectAsState()
     val isRunning = pipelineState != PipelineState.IDLE
 
     val epName = when (modelManager.selectedProvider.collectAsState().value) {
@@ -109,19 +132,6 @@ fun InterpretScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        pipeline.events.collect { event ->
-            viewModel.onPipelineEvent(event)
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            pipeline.release()
-            viewModel.clearConversation()
-        }
-    }
-
     Scaffold(
         containerColor = bg,
         topBar = {
@@ -139,6 +149,7 @@ fun InterpretScreen(
                             PipelineState.LOADING -> "加载模型中…"
                             PipelineState.LISTENING -> "监听中 · $epName"
                             PipelineState.RECOGNIZING -> "识别中…"
+                            PipelineState.TRANSLATING -> "Hy-MT 翻译中…"
                             PipelineState.SYNTHESIZING -> "合成中…"
                             PipelineState.PLAYING -> "播放中…"
                         }
@@ -150,7 +161,7 @@ fun InterpretScreen(
 
                         val telemetryText = remember(telemetry) {
                             if (telemetry.asrCount == 0L && telemetry.ttsCount == 0L) ""
-                            else "ASR ${telemetry.lastAsrMs}ms · TTS ${telemetry.lastTtsMs}ms · RTF ${"%.2f".format(telemetry.lastRtf)}"
+                            else "ASR ${telemetry.lastAsrMs}ms · MT ${telemetry.lastMtMs}ms · TTS ${telemetry.lastTtsMs}ms · RTF ${"%.2f".format(telemetry.lastRtf)}"
                         }
                         if (telemetryText.isNotBlank()) {
                             Text(
@@ -188,9 +199,13 @@ fun InterpretScreen(
                 amplitude = amplitude,
                 sourceDialect = sourceDialect,
                 targetLanguage = targetLanguage,
+                errorMessage = errorMessage,
                 onToggle = {
-                    if (isRunning) pipeline.stop()
-                    else pipeline.start(scope, targetLanguage = targetLanguageCode)
+                    if (isRunning) viewModel.stopSession()
+                    else viewModel.startSession(
+                        sourceLanguage = sourceLanguageCode,
+                        targetLanguage = targetLanguageCode
+                    )
                 }
             )
         }
@@ -238,6 +253,8 @@ fun InterpretScreen(
         DialectBottomSheet(
             sourceDialect = sourceDialect,
             targetLanguage = targetLanguage,
+            sourceOptions = sourceOptions,
+            targetOptions = targetOptions,
             onSourceChange = { sourceDialect = it },
             onTargetChange = { targetLanguage = it },
             onDismiss = { showDialectSheet = false }
@@ -382,6 +399,14 @@ private fun ChatBubblePair(message: ChatMessage) {
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            if (message.mtLatencyMs > 0) {
+                                Text(
+                                    "MT ${message.mtLatencyMs}ms",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = secondary,
+                                    fontSize = 10.sp
+                                )
+                            }
                             if (message.ttsLatencyMs > 0) {
                                 Text(
                                     "TTS ${message.ttsLatencyMs}ms",
@@ -458,12 +483,15 @@ private fun MinimalBottomBar(
     amplitude: Float,
     sourceDialect: String,
     targetLanguage: String,
+    errorMessage: String?,
     onToggle: () -> Unit
 ) {
     val accent = AppColors.accent()
     val surface = AppColors.surface()
     val secondary = AppColors.textSecondary()
     val bg = AppColors.bg()
+    val statusText = errorMessage ?: "$sourceDialect → $targetLanguage"
+    val statusColor = if (errorMessage != null) ErrorRed else secondary
 
     // Mic button scale
     val micScale by animateFloatAsState(
@@ -517,9 +545,9 @@ private fun MinimalBottomBar(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "$sourceDialect → $targetLanguage",
+                        statusText,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = secondary,
+                        color = statusColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -574,6 +602,8 @@ private fun MinimalBottomBar(
 private fun DialectBottomSheet(
     sourceDialect: String,
     targetLanguage: String,
+    sourceOptions: List<Pair<String, String>>,
+    targetOptions: List<Pair<String, String>>,
     onSourceChange: (String) -> Unit,
     onTargetChange: (String) -> Unit,
     onDismiss: () -> Unit
@@ -590,7 +620,7 @@ private fun DialectBottomSheet(
     ) {
         Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
             Text(
-                "源方言",
+                "源语言 / 方言",
                 style = MaterialTheme.typography.labelMedium,
                 color = secondary,
                 fontWeight = FontWeight.Medium
@@ -600,7 +630,7 @@ private fun DialectBottomSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                AsrEngine.CHINESE_DIALECTS.forEach { (label, _) ->
+                sourceOptions.forEach { (label, _) ->
                     FilterChip(
                         selected = label == sourceDialect,
                         onClick = { onSourceChange(label) },
@@ -626,7 +656,7 @@ private fun DialectBottomSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                AsrEngine.SUPPORTED_LANGUAGES.forEach { (label, _) ->
+                targetOptions.forEach { (label, _) ->
                     FilterChip(
                         selected = label == targetLanguage,
                         onClick = { onTargetChange(label) },

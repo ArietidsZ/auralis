@@ -9,7 +9,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.dialect.interpreter.DialectApp
-import com.dialect.interpreter.data.ModelRepository
 import com.dialect.interpreter.ui.screens.*
 
 /**
@@ -27,9 +26,9 @@ private const val TRANSITION_MS = 350
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
-    val appContext = LocalContext.current.applicationContext
-    val modelManager = (appContext as DialectApp).modelManager
-    val modelRepo = remember { ModelRepository(appContext) }
+    val appContext = LocalContext.current.applicationContext as DialectApp
+    val modelManager = appContext.container.modelManager
+    val modelRepo = remember { appContext.container.modelRepository }
 
     val startDestination = if (modelRepo.areModelsReady()) {
         AppRoutes.INTERPRET

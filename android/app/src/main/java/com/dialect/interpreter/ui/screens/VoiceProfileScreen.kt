@@ -37,7 +37,7 @@ fun VoiceProfileScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val appContext = androidx.compose.ui.platform.LocalContext.current.applicationContext
     val profileRepo = remember { VoiceProfileRepository(appContext) }
-    val audioRecorder = remember { AudioRecorder() }
+    val audioRecorder = remember { AudioRecorder(appContext) }
     val audioPlayer = remember { AudioPlayer() }
 
     var profiles by remember { mutableStateOf(profileRepo.getProfiles()) }

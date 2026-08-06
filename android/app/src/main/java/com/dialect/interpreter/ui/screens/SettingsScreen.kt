@@ -80,13 +80,15 @@ fun SettingsScreen(
             SettingsSection("模型", accent) {
                 InfoRow(Icons.Default.Storage, "磁盘占用", "${modelRepo.getDownloadedSize() / 1_000_000} MB")
                 InfoRow(Icons.Default.Hearing, "ASR", if (modelRepo.areAsrModelsReady()) "就绪" else "未解压")
+                InfoRow(Icons.Default.Translate, "MT", if (modelRepo.areMtModelsReady()) "就绪" else "未解压")
                 InfoRow(Icons.Default.RecordVoiceOver, "TTS", if (modelRepo.areTtsModelsReady()) "就绪" else "未解压")
-                InfoRow(Icons.Default.Compress, "量化", "INT4 Block-wise")
+                InfoRow(Icons.Default.Compress, "量化", "ASR/TTS INT4 · MT 1.25-bit")
             }
 
             SettingsSection("关于", accent) {
                 InfoRow(Icons.Default.Info, "版本", "1.0.0")
                 InfoRow(Icons.Default.Code, "ASR", "Qwen3-ASR-0.6B")
+                InfoRow(Icons.Default.Code, "MT", "AngelSlim/Hy-MT1.5-1.8B-1.25bit")
                 InfoRow(Icons.Default.Code, "TTS", "Qwen3-TTS-12Hz-0.6B")
             }
 

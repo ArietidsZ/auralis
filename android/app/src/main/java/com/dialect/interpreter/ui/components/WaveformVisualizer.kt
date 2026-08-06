@@ -28,17 +28,21 @@ fun WaveformVisualizer(
     val accent = AppColors.accent()
     val accentFaded = accent.copy(alpha = 0.35f)
 
-    // Idle breathing phase
-    val infiniteTransition = rememberInfiniteTransition(label = "waveIdle")
-    val breathPhase by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 2f * Math.PI.toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(2400, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "breath"
-    )
+    val breathPhase = if (isActive) {
+        val infiniteTransition = rememberInfiniteTransition(label = "waveActive")
+        val phase by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 2f * Math.PI.toFloat(),
+            animationSpec = infiniteRepeatable(
+                animation = tween(1800, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "phase"
+        )
+        phase
+    } else {
+        0f
+    }
 
     Row(
         modifier = modifier.height(40.dp),
@@ -53,9 +57,7 @@ fun WaveformVisualizer(
                 val offset = sin(normalizedIndex * Math.PI.toFloat() + breathPhase * 1.5f)
                 (amplitude * (0.5f + 0.5f * offset)).coerceIn(0.15f, 1f)
             } else {
-                // Gentle idle wave
-                val idleWave = 0.12f + 0.08f * sin(breathPhase + index * 0.9f)
-                idleWave
+                0.16f
             }
 
             val animatedFraction by animateFloatAsState(

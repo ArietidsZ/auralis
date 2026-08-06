@@ -37,7 +37,12 @@ class ModelRepository(private val context: Context) {
         private const val MODELS_DIR = "dialect_models"
         private const val ASR_PACK = "asset_pack_asr"
         private const val TTS_PACK = "asset_pack_tts"
-        private val OPTIONAL_MANIFEST_FILES = listOf("asr/manifest.json", "tts/manifest.json")
+        private const val MT_PACK = "asset_pack_mt"
+        private val OPTIONAL_MANIFEST_FILES = listOf(
+            "asr/manifest.json",
+            "tts/manifest.json",
+            "mt/manifest.json"
+        )
 
         val ASR_MODEL_FILES = listOf(
             "asr/asr_encoder_int4.onnx",
@@ -50,6 +55,10 @@ class ModelRepository(private val context: Context) {
             "tts/talker_lm_int4.onnx",
             "tts/vocoder_int4.onnx",
             "tts/tokenizer/tokenizer.json",
+        )
+
+        val MT_MODEL_FILES = listOf(
+            "mt/Hy-MT1.5-1.8B-1.25bit.gguf",
         )
     }
 
@@ -79,13 +88,17 @@ class ModelRepository(private val context: Context) {
      * Check if models have been extracted to internal storage.
      */
     fun areModelsReady(): Boolean =
-        areAsrModelsReady() && areTtsModelsReady() && verifyManifestSizesOnly()
+        areAsrModelsReady() && areTtsModelsReady() && areMtModelsReady() && verifyManifestSizesOnly()
 
     fun areAsrModelsReady(): Boolean = ASR_MODEL_FILES.all {
         File(modelsDir, it).let { f -> f.exists() && f.length() > 0 }
     }
 
     fun areTtsModelsReady(): Boolean = TTS_MODEL_FILES.all {
+        File(modelsDir, it).let { f -> f.exists() && f.length() > 0 }
+    }
+
+    fun areMtModelsReady(): Boolean = MT_MODEL_FILES.all {
         File(modelsDir, it).let { f -> f.exists() && f.length() > 0 }
     }
 
@@ -97,17 +110,20 @@ class ModelRepository(private val context: Context) {
     suspend fun extractBundledModels() = withContext(Dispatchers.IO) {
         val asrFiles = ASR_MODEL_FILES + "asr/manifest.json"
         val ttsFiles = TTS_MODEL_FILES + "tts/manifest.json"
-        val allFiles = asrFiles + ttsFiles
+        val mtFiles = MT_MODEL_FILES + "mt/manifest.json"
+        val allFiles = asrFiles + ttsFiles + mtFiles
         _extractionProgress.value = ExtractionProgress(totalFiles = allFiles.size)
 
         try {
             // Try Play Asset Delivery first
             val asrLocation = assetPackManager.getPackLocation(ASR_PACK)
             val ttsLocation = assetPackManager.getPackLocation(TTS_PACK)
+            val mtLocation = assetPackManager.getPackLocation(MT_PACK)
 
-            if (asrLocation != null && ttsLocation != null) {
+            if (asrLocation != null && ttsLocation != null && mtLocation != null) {
                 extractFromAssetPack(asrLocation, asrFiles, "ASR")
                 extractFromAssetPack(ttsLocation, ttsFiles, "TTS")
+                extractFromAssetPack(mtLocation, mtFiles, "MT")
             } else {
                 // Fallback: extract from app assets (for debug builds / sideloading)
                 Log.i(TAG, "Asset packs not found, extracting from app assets")

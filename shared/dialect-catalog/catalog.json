@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "1",
+  "dialects": [
+    {"id": "mandarin", "displayLabel": "普通话", "shortLabel": "普通话", "family": "mandarin", "asrLanguage": "Chinese", "ttsLanguageCode": "zh"},
+    {"id": "cantonese", "displayLabel": "粤语", "shortLabel": "粤语", "family": "yue", "asrLanguage": "Cantonese", "ttsLanguageCode": "zh"},
+    {"id": "sichuan", "displayLabel": "四川话", "shortLabel": "四川", "family": "mandarin", "asrLanguage": "Sichuan", "ttsLanguageCode": "zh"},
+    {"id": "dongbei", "displayLabel": "东北话", "shortLabel": "东北", "family": "mandarin", "asrLanguage": "Dongbei", "ttsLanguageCode": "zh"},
+    {"id": "henan", "displayLabel": "河南话", "shortLabel": "河南", "family": "mandarin", "asrLanguage": "Henan", "ttsLanguageCode": "zh"},
+    {"id": "hunan", "displayLabel": "湖南话", "shortLabel": "湖南", "family": "mandarin", "asrLanguage": "Hunan", "ttsLanguageCode": "zh"},
+    {"id": "hubei", "displayLabel": "湖北话", "shortLabel": "湖北", "family": "mandarin", "asrLanguage": "Hubei", "ttsLanguageCode": "zh"},
+    {"id": "shandong", "displayLabel": "山东话", "shortLabel": "山东", "family": "mandarin", "asrLanguage": "Shandong", "ttsLanguageCode": "zh"},
+    {"id": "shaanxi", "displayLabel": "陕西话", "shortLabel": "陕西", "family": "mandarin", "asrLanguage": "Shaanxi", "ttsLanguageCode": "zh"},
+    {"id": "fujian", "displayLabel": "福建话", "shortLabel": "福建", "family": "min", "asrLanguage": "Fujian", "ttsLanguageCode": "zh"},
+    {"id": "anhui", "displayLabel": "安徽话", "shortLabel": "安徽", "family": "mandarin", "asrLanguage": "Anhui", "ttsLanguageCode": "zh"},
+    {"id": "gansu", "displayLabel": "甘肃话", "shortLabel": "甘肃", "family": "mandarin", "asrLanguage": "Gansu", "ttsLanguageCode": "zh"},
+    {"id": "guizhou", "displayLabel": "贵州话", "shortLabel": "贵州", "family": "mandarin", "asrLanguage": "Guizhou", "ttsLanguageCode": "zh"},
+    {"id": "hebei", "displayLabel": "河北话", "shortLabel": "河北", "family": "mandarin", "asrLanguage": "Hebei", "ttsLanguageCode": "zh"},
+    {"id": "jiangxi", "displayLabel": "江西话", "shortLabel": "江西", "family": "gan", "asrLanguage": "Jiangxi", "ttsLanguageCode": "zh"},
+    {"id": "ningxia", "displayLabel": "宁夏话", "shortLabel": "宁夏", "family": "mandarin", "asrLanguage": "Ningxia", "ttsLanguageCode": "zh"},
+    {"id": "shanxi", "displayLabel": "山西话", "shortLabel": "山西", "family": "jin", "asrLanguage": "Shanxi", "ttsLanguageCode": "zh"},
+    {"id": "tianjin", "displayLabel": "天津话", "shortLabel": "天津", "family": "mandarin", "asrLanguage": "Tianjin", "ttsLanguageCode": "zh"},
+    {"id": "yunnan", "displayLabel": "云南话", "shortLabel": "云南", "family": "mandarin", "asrLanguage": "Yunnan", "ttsLanguageCode": "zh"},
+    {"id": "zhejiang", "displayLabel": "浙江话", "shortLabel": "浙江", "family": "wu", "asrLanguage": "Zhejiang", "ttsLanguageCode": "zh"},
+    {"id": "wu", "displayLabel": "吴语", "shortLabel": "吴语", "family": "wu", "asrLanguage": "Wu", "ttsLanguageCode": "zh"},
+    {"id": "minnan", "displayLabel": "闽南语", "shortLabel": "闽南", "family": "min", "asrLanguage": "Minnan", "ttsLanguageCode": "zh"}
+  ],
+  "targetLanguages": [
+    {"id": "zh", "displayLabel": "中文", "asrLanguage": "Chinese"},
+    {"id": "en", "displayLabel": "English", "asrLanguage": "English"},
+    {"id": "ja", "displayLabel": "日本語", "asrLanguage": "Japanese"},
+    {"id": "ko", "displayLabel": "한국어", "asrLanguage": "Korean"},
+    {"id": "de", "displayLabel": "Deutsch", "asrLanguage": "German"},
+    {"id": "fr", "displayLabel": "Français", "asrLanguage": "French"},
+    {"id": "ru", "displayLabel": "Русский", "asrLanguage": "Russian"},
+    {"id": "pt", "displayLabel": "Português", "asrLanguage": "Portuguese"},
+    {"id": "es", "displayLabel": "Español", "asrLanguage": "Spanish"},
+    {"id": "it", "displayLabel": "Italiano", "asrLanguage": "Italian"}
+  ]
+}

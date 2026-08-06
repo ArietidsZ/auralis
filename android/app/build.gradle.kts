@@ -2,7 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
-    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin") version "2.0.1" apply false
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -62,8 +62,23 @@ android {
     }
 
     // Use asset packs for large model files via Play Asset Delivery
-    assetPacks += listOf(":asset_pack_asr", ":asset_pack_tts")
+    assetPacks += listOf(":asset_pack_asr", ":asset_pack_tts", ":asset_pack_mt")
+
+    // Bundle the canonical dialect catalog (from shared/) as a generated app asset
+    // so the runtime consumes a single source of truth instead of a hardcoded list.
+    sourceSets.getByName("main") {
+        assets.srcDir(layout.buildDirectory.dir("generated/sharedAssets"))
+    }
 }
+
+// Copy the canonical dialect catalog from shared/ into a generated asset dir.
+// shared/dialect-catalog/catalog.json is the single source of truth; the app
+// loads it at runtime (see DialectCatalog), so Kotlin/Swift never hardcode dialects.
+tasks.register<Copy>("syncSharedDialectCatalog") {
+    from(rootProject.file("../shared/dialect-catalog/catalog.json"))
+    into(layout.buildDirectory.dir("generated/sharedAssets/dialect"))
+}
+tasks.named("preBuild").configure { dependsOn("syncSharedDialectCatalog") }
 
 dependencies {
     // Compose BOM
@@ -84,8 +99,9 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.navigation:navigation-compose:2.8.5")
 
-    // ONNX Runtime - core engine for on-device inference
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
+    // ONNX Runtime - core engine for on-device inference.
+    // v1.22+ ships KleidiAI-optimized MLAS INT4 kernels (28-51% uplift) on Arm.
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.22.0")
 
     // Play Asset Delivery - for bundled model files
     implementation("com.google.android.play:asset-delivery-ktx:2.2.2")

@@ -1,0 +1,266 @@
+{
+  "schemaVersion": "1",
+  "packageId": "tts",
+  "version": "1.0.0",
+  "sourcePackageName": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+  "checksumAlgorithm": "sha256",
+  "supportedExecutionTargets": [
+    "cpu",
+    "nnapi",
+    "coreml"
+  ],
+  "compatibility": {
+    "android": {
+      "runtimeSupport": "manifest-only"
+    },
+    "ios": {
+      "runtimeSupport": "manifest-only"
+    },
+    "workspace": {
+      "requiredGate": "manifest-only"
+    }
+  },
+  "files": [
+    {
+      "path": "tts/code_predictor.onnx",
+      "sizeBytes": 440686845,
+      "sha256": "44c528d01c099b62e28ad98fe4d4480fd4290d2912b040d2fd275c259321faad"
+    },
+    {
+      "path": "tts/embeddings/codec_head_weight.npy",
+      "sizeBytes": 12583040,
+      "sha256": "8b6158b68fe696c2cbda6210f71c52ca0a7edf350bbe04e2bb5964271a94760c"
+    },
+    {
+      "path": "tts/embeddings/config.json",
+      "sizeBytes": 1165,
+      "sha256": "142804a7ecd67aa95b2c4bc79b99303af12daf17583b41ac46ab9bd8b046cd75"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_0.npy",
+      "sizeBytes": 8388736,
+      "sha256": "2cf4b5d6f6fca977657bc82634eea275cd072036a6a16484febd41b5445abff1"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_1.npy",
+      "sizeBytes": 8388736,
+      "sha256": "c8655ecd642f17d04a85ea37c2665205a8666843925227b25dc8c8bceb8015f5"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_10.npy",
+      "sizeBytes": 8388736,
+      "sha256": "bf17275629b464a4a38826beeb79b99e0e58cc02c530da2e572b9b7d9972fb2d"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_11.npy",
+      "sizeBytes": 8388736,
+      "sha256": "dee4af40f34626a4951fba2b894120c8cf8293024ae068d1f2579f356c6e2284"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_12.npy",
+      "sizeBytes": 8388736,
+      "sha256": "e307b70fbaddc6e7e48259b4e8c9417f24b155be9281205f38bbf40c64359951"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_13.npy",
+      "sizeBytes": 8388736,
+      "sha256": "cc15bfc4290be77523f8f14c78b9b1710042b5d078291ee87038dfb7ecb3f185"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_14.npy",
+      "sizeBytes": 8388736,
+      "sha256": "aa0de98365775e1cb968514595ff7e23936bea21c2bda6e5bab7e7052cdf97ba"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_2.npy",
+      "sizeBytes": 8388736,
+      "sha256": "5436624853b3091bc1b88cf37a4d60af46346c508237d72e597bed561a5b2138"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_3.npy",
+      "sizeBytes": 8388736,
+      "sha256": "1041b78ea5158c96cda4aae45bd21707a6fe8c92e6831715075d70d7b5b8e77a"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_4.npy",
+      "sizeBytes": 8388736,
+      "sha256": "17af8770454ab26ca82f092d0d5a634680e4d14412d327fb8b6f94a57b256800"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_5.npy",
+      "sizeBytes": 8388736,
+      "sha256": "b9abbf163b50ba0207e2196772c67b2e1025cf7f4fbe378c6a44123869253ad9"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_6.npy",
+      "sizeBytes": 8388736,
+      "sha256": "1fb06414cb7d4edcd73142e79cbb4bd46f918517e5812b73345ade9535c6eafb"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_7.npy",
+      "sizeBytes": 8388736,
+      "sha256": "08b8d7bd125d75ffa42f515153e66ade42cb16c2eea6ebe1935a2ac2509cbad0"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_8.npy",
+      "sizeBytes": 8388736,
+      "sha256": "a2cf331bb3e2f2c0d44c91c55af045b9c975199331e4566a373b883ce04e9964"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_9.npy",
+      "sizeBytes": 8388736,
+      "sha256": "389422edef8c0b6dbf6cdb48359a0274b11984c04668c004810866784dab2942"
+    },
+    {
+      "path": "tts/embeddings/speaker_ids.json",
+      "sizeBytes": 2,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "path": "tts/embeddings/talker_codec_embedding.npy",
+      "sizeBytes": 12583040,
+      "sha256": "47fa9e30f98b1528fc9b332d314f22a32fa33e187509a4d3537f8b2c31199e39"
+    },
+    {
+      "path": "tts/embeddings/text_embedding.npy",
+      "sizeBytes": 1244659840,
+      "sha256": "e49a5ebb22075609520b91db99c33cf7590cefddc96d574a725a353ff0b1f480"
+    },
+    {
+      "path": "tts/embeddings/text_projection_fc1_bias.npy",
+      "sizeBytes": 8320,
+      "sha256": "2ca292516e9574fa67e0174a49770051156246bb0679096f0514286091eea7c3"
+    },
+    {
+      "path": "tts/embeddings/text_projection_fc1_weight.npy",
+      "sizeBytes": 16777344,
+      "sha256": "94b62d00b306c5db843ac86dc135354889a2ce40d7adce79ae23f63c3d6acf19"
+    },
+    {
+      "path": "tts/embeddings/text_projection_fc2_bias.npy",
+      "sizeBytes": 4224,
+      "sha256": "0725b7f7d0318f430723177d046eaf3b08c7a65d4a4a6dd264d61e574e66ff19"
+    },
+    {
+      "path": "tts/embeddings/text_projection_fc2_weight.npy",
+      "sizeBytes": 8388736,
+      "sha256": "d6d31d3bca45fee1d05612f3c9eb26e0c34587be52d2c34c208c79e6656f15a6"
+    },
+    {
+      "path": "tts/speaker_encoder.onnx",
+      "sizeBytes": 412751,
+      "sha256": "c5fd5fce09385891913845335b58661672711d14230c1ba120ebd655ca85a48c"
+    },
+    {
+      "path": "tts/speaker_encoder.onnx.data",
+      "sizeBytes": 35454976,
+      "sha256": "dd33300f9d947b8a1dd9ec7379196c79656fd904bab2dc336ecfafba52cda3d8"
+    },
+    {
+      "path": "tts/talker_decode.onnx",
+      "sizeBytes": 4763080,
+      "sha256": "082ef0c7d195422f2a36c3a55f8f65be4acd286bd32e3afdfe3dc3a8def96424"
+    },
+    {
+      "path": "tts/talker_decode.onnx.data",
+      "sizeBytes": 1774452736,
+      "sha256": "4d8e742a81ab44ae09bbff72b728caeeaa9c3fb2bd50a0c0f0103d4a0909158b"
+    },
+    {
+      "path": "tts/talker_prefill.onnx",
+      "sizeBytes": 4625020,
+      "sha256": "79975996d51e3dc19a187afbe57c190a8a4d7e5d2d9c2ab5b64727726717bc05"
+    },
+    {
+      "path": "tts/talker_prefill.onnx.data",
+      "sizeBytes": 1774452736,
+      "sha256": "4d8e742a81ab44ae09bbff72b728caeeaa9c3fb2bd50a0c0f0103d4a0909158b"
+    },
+    {
+      "path": "tts/tokenizer/merges.txt",
+      "sizeBytes": 1671853,
+      "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5"
+    },
+    {
+      "path": "tts/tokenizer/vocab.json",
+      "sizeBytes": 2776833,
+      "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    },
+    {
+      "path": "tts/vocoder.onnx",
+      "sizeBytes": 2713127,
+      "sha256": "bea75666aeb6bd837ba0ad0344f2001513771faa6bad8d6b4cb387a6df242225"
+    },
+    {
+      "path": "tts/vocoder.onnx.data",
+      "sizeBytes": 456261632,
+      "sha256": "f4cd93d2b48b833a6aaca7d5a3c95dd99853baba565514cb91777e3ce3c4cc8d"
+    }
+  ],
+  "roles": {
+    "speaker_encoder": "tts/speaker_encoder.onnx",
+    "talker_prefill": "tts/talker_prefill.onnx",
+    "talker_decode": "tts/talker_decode.onnx",
+    "code_predictor": "tts/code_predictor.onnx",
+    "vocoder": "tts/vocoder.onnx"
+  },
+  "assetClasses": {
+    "tts/speaker_encoder.onnx.data": "requiredSupportAsset",
+    "tts/talker_prefill.onnx.data": "requiredSupportAsset",
+    "tts/talker_decode.onnx.data": "requiredSupportAsset",
+    "tts/vocoder.onnx.data": "requiredSupportAsset",
+    "tts/tokenizer/vocab.json": "requiredSupportAsset",
+    "tts/tokenizer/merges.txt": "requiredSupportAsset",
+    "tts/embeddings/codec_head_weight.npy": "requiredSupportAsset",
+    "tts/embeddings/config.json": "requiredSupportAsset",
+    "tts/embeddings/cp_codec_embedding_0.npy": "requiredSupportAsset",
+    "tts/embeddings/cp_codec_embedding_1.npy": "requiredSupportAsset",
+    "tts/embeddings/cp_codec_embedding_10.npy": "requiredSupportAsset",
+    "tts/embeddings/cp_codec_embedding_11.npy": "requiredSupportAsset",
+    "tts/embeddings/cp_codec_embedding_12.npy": "requiredSupportAsset",
+    "tts/embeddings/cp_codec_embedding_13.npy": "requiredSupportAsset",
+    "tts/embeddings/cp_codec_embedding_14.npy": "requiredSupportAsset",
+    "tts/embeddings/cp_codec_embedding_2.npy": "requiredSupportAsset",
+    "tts/embeddings/cp_codec_embedding_3.npy": "requiredSupportAsset",
+    "tts/embeddings/cp_codec_embedding_4.npy": "requiredSupportAsset",
+    "tts/embeddings/cp_codec_embedding_5.npy": "requiredSupportAsset",
+    "tts/embeddings/cp_codec_embedding_6.npy": "requiredSupportAsset",
+    "tts/embeddings/cp_codec_embedding_7.npy": "requiredSupportAsset",
+    "tts/embeddings/cp_codec_embedding_8.npy": "requiredSupportAsset",
+    "tts/embeddings/cp_codec_embedding_9.npy": "requiredSupportAsset",
+    "tts/embeddings/speaker_ids.json": "requiredSupportAsset",
+    "tts/embeddings/talker_codec_embedding.npy": "requiredSupportAsset",
+    "tts/embeddings/text_embedding.npy": "requiredSupportAsset",
+    "tts/embeddings/text_projection_fc1_bias.npy": "requiredSupportAsset",
+    "tts/embeddings/text_projection_fc1_weight.npy": "requiredSupportAsset",
+    "tts/embeddings/text_projection_fc2_bias.npy": "requiredSupportAsset",
+    "tts/embeddings/text_projection_fc2_weight.npy": "requiredSupportAsset"
+  },
+  "quantizationByRole": {
+    "speaker_encoder": {
+      "format": "onnx",
+      "quantization": "none"
+    },
+    "talker_prefill": {
+      "format": "onnx",
+      "quantization": "none"
+    },
+    "talker_decode": {
+      "format": "onnx",
+      "quantization": "none"
+    },
+    "code_predictor": {
+      "format": "onnx",
+      "quantization": "none"
+    },
+    "vocoder": {
+      "format": "onnx",
+      "quantization": "none"
+    }
+  },
+  "sourceBundle": {
+    "kind": "community-onnx",
+    "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+    "baseModel": "Qwen/Qwen3-TTS-12Hz-0.6B-Base"
+  }
+}

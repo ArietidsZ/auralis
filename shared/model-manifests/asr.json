@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1",
+  "packageId": "asr",
+  "version": "0.0.0",
+  "sourcePackageName": "Qwen/Qwen3-ASR-0.6B",
+  "checksumAlgorithm": "sha256",
+  "supportedExecutionTargets": [
+    "cpu",
+    "nnapi",
+    "coreml"
+  ],
+  "compatibility": {
+    "minAndroidSdk": 29,
+    "minIosVersion": "17.0"
+  },
+  "files": []
+}

@@ -6,6 +6,7 @@
 
 - `export_asr_onnx.py`：导出 Qwen3-ASR ONNX，并尝试 INT4 量化
 - `export_tts_onnx.py`：导出/下载 Qwen3-TTS ONNX，并做量化处理
+- `download_hymt_gguf.py`：下载 AngelSlim/Hy-MT1.5-1.8B-1.25bit GGUF 到 Android MT asset pack，并生成 manifest
 - `validate_models.py`：对导出结果做可用性验证
 - `benchmark_onnx_runtime.py`：对 ONNX 模型做加载和推理延迟基准
 
@@ -20,6 +21,7 @@ pip install -r requirements.txt
 ```bash
 python export_asr_onnx.py
 python export_tts_onnx.py
+python download_hymt_gguf.py
 python validate_models.py
 python benchmark_onnx_runtime.py --models-dir ../models --providers CPUExecutionProvider
 ```
@@ -37,4 +39,5 @@ python benchmark_onnx_runtime.py --models-dir ../models --providers CPUExecution
 ## 注意事项
 
 - 量化/导出依赖上游模型结构；模型版本变化可能导致导出代码需要同步调整。
+- Hy-MT GGUF 还需要 Android 端 native runtime（`libhymt_jni.so`）一起打包；脚本只负责模型文件与 manifest。
 - 建议每次替换模型后都执行一次 `validate_models.py` + `benchmark_onnx_runtime.py`。

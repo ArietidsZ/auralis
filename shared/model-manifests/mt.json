@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1",
+  "packageId": "mt",
+  "version": "0.0.0",
+  "sourcePackageName": "AngelSlim/Hy-MT1.5-1.8B-1.25bit-GGUF",
+  "checksumAlgorithm": "sha256",
+  "supportedExecutionTargets": [
+    "cpu"
+  ],
+  "compatibility": {
+    "minAndroidSdk": 29,
+    "minIosVersion": "17.0"
+  },
+  "files": [
+    {
+      "path": "mt/Hy-MT1.5-1.8B-1.25bit.gguf",
+      "size_bytes": null,
+      "sha256": ""
+    }
+  ]
+}

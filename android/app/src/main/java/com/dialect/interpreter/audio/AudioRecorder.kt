@@ -2,18 +2,19 @@ package com.dialect.interpreter.audio
 
 import android.annotation.SuppressLint
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.util.Log
 import androidx.core.content.ContextCompat
-import com.dialect.interpreter.DialectApp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlin.math.sqrt
@@ -22,14 +23,14 @@ import kotlin.math.sqrt
  * Low-latency PCM audio recorder using AudioRecord API.
  * Outputs 16kHz, 16-bit, mono PCM chunks for ASR processing.
  */
-class AudioRecorder {
+class AudioRecorder(private val context: Context) {
 
     companion object {
         private const val TAG = "AudioRecorder"
         const val SAMPLE_RATE = 16000
         const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
         const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
-        const val CHUNK_SIZE_MS = 200  // 200ms chunks for lower end-to-end latency
+        const val CHUNK_SIZE_MS = 200  // 200ms chunks for ASR mel accumulation
         val CHUNK_SIZE_SAMPLES = SAMPLE_RATE * CHUNK_SIZE_MS / 1000
     }
 
@@ -38,7 +39,14 @@ class AudioRecorder {
     private val _isRecording = MutableStateFlow(false)
     val isRecording: StateFlow<Boolean> = _isRecording
 
-    private val _audioChunks = MutableSharedFlow<FloatArray>(extraBufferCapacity = 10)
+    // DROP_OLDEST: the hardware read loop must never block on a slow consumer,
+    // or the OS audio buffer overflows and we lose captures unpredictably. Under
+    // extreme backpressure we'd rather evict the oldest raw chunk than stall the
+    // recorder; committed utterances are protected upstream at the pipeline layer.
+    private val _audioChunks = MutableSharedFlow<FloatArray>(
+        extraBufferCapacity = 10,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
     val audioChunks: SharedFlow<FloatArray> = _audioChunks
 
     private val _amplitude = MutableStateFlow(0f)
@@ -49,7 +57,7 @@ class AudioRecorder {
      */
     fun hasPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
-            DialectApp.instance,
+            context,
             Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
     }
@@ -57,6 +65,10 @@ class AudioRecorder {
     /**
      * Start recording audio in a coroutine.
      * Emits FloatArray chunks via audioChunks flow.
+     *
+     * @throws IllegalStateException if RECORD_AUDIO permission is missing or the
+     *   input device fails to initialize — the caller surfaces this as a
+     *   recoverable error rather than leaving the session silently un-mic'd.
      */
     suspend fun startRecording() = withContext(Dispatchers.IO) {
         if (_isRecording.value) {
@@ -65,8 +77,7 @@ class AudioRecorder {
         }
 
         if (!hasPermission()) {
-            Log.e(TAG, "RECORD_AUDIO permission not granted")
-            return@withContext
+            throw IllegalStateException("RECORD_AUDIO permission not granted")
         }
 
         val bufferSize = maxOf(
@@ -84,8 +95,7 @@ class AudioRecorder {
             )
 
             if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
-                Log.e(TAG, "AudioRecord failed to initialize")
-                return@withContext
+                throw IllegalStateException("AudioRecord failed to initialize")
             }
 
             audioRecord?.startRecording()
@@ -119,8 +129,10 @@ class AudioRecorder {
             }
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException: ${e.message}")
+            throw e
         } catch (e: Exception) {
-            Log.e(TAG, "Recording error: ${e.message}", e)
+            Log.e(TAG, "Recording start error: ${e.message}", e)
+            throw e
         } finally {
             stopAndReleaseRecorder(audioRecord)
             audioRecord = null

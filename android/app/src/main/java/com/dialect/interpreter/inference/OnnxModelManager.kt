@@ -35,6 +35,8 @@ class OnnxModelManager(private val context: Context) {
         const val MODELS_DIR = "dialect_models"
         const val ASR_DIR = "asr"
         const val TTS_DIR = "tts"
+        const val MT_DIR = "mt"
+        const val HY_MT_GGUF = "Hy-MT1.5-1.8B-1.25bit.gguf"
     }
 
     enum class ExecutionProvider { NNAPI, CPU }
@@ -58,9 +60,14 @@ class OnnxModelManager(private val context: Context) {
     }
 
     private fun detectBestProvider() {
-        _selectedProvider.value = ExecutionProvider.NNAPI
-        Log.i(TAG, "NNAPI EP selected — NPU acceleration enabled")
-        Log.i(TAG, "  SoC: ${socName()}, Board: ${Build.BOARD}, SDK: ${Build.VERSION.SDK_INT}")
+        // NNAPI does NOT support INT4 / MatMulNBits gen-AI ops (its op surface is
+        // INT8 QLinear ops only), so it is not a valid accelerator for the INT4
+        // Qwen3 transformer weights. The portable INT4 path is ORT CPU via the
+        // KleidiAI-optimized MLAS kernels (ONNX Runtime >= 1.22). Qualcomm devices
+        // can additionally use the QNN EP (native INT8/INT4/INT2) once a QDQ
+        // context-binary model is produced — see the EP strategy in the refactor plan.
+        _selectedProvider.value = ExecutionProvider.CPU
+        Log.i(TAG, "CPU EP selected (portable INT4 path) — SoC: ${socName()}, Board: ${Build.BOARD}, SDK: ${Build.VERSION.SDK_INT}")
     }
 
     private fun socName(): String {

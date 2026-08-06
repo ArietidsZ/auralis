@@ -140,7 +140,11 @@ class TtsEngine(private val modelManager: OnnxModelManager) {
             "ja" to listOf("<|ja|>", "<|jp|>", "<|japanese|>"),
             "ko" to listOf("<|ko|>", "<|kr|>", "<|korean|>"),
             "de" to listOf("<|de|>", "<|german|>"),
-            "fr" to listOf("<|fr|>", "<|french|>")
+            "fr" to listOf("<|fr|>", "<|french|>"),
+            "ru" to listOf("<|ru|>", "<|russian|>"),
+            "pt" to listOf("<|pt|>", "<|portuguese|>"),
+            "es" to listOf("<|es|>", "<|spanish|>"),
+            "it" to listOf("<|it|>", "<|italian|>")
         )
 
         return aliases.mapNotNull { (code, candidates) ->
@@ -328,6 +332,10 @@ class TtsEngine(private val modelManager: OnnxModelManager) {
             "korean", "한국어", "kr" -> "ko"
             "german", "deutsch" -> "de"
             "french", "français" -> "fr"
+            "russian", "русский" -> "ru"
+            "portuguese", "português" -> "pt"
+            "spanish", "español" -> "es"
+            "italian", "italiano" -> "it"
             else -> "zh"
         }
 
@@ -370,29 +378,38 @@ class TtsEngine(private val modelManager: OnnxModelManager) {
     }
 
     private fun parseSpeechCodes(outputValue: Any?, textTokenCount: Int): Array<LongArray> {
+        // Fail loudly instead of returning all-zero codes (which silently produce
+        // silence). A mis-decoded TTS must surface as an error, not as empty audio.
+        val root = outputValue as? Array<*> ?: throw IllegalStateException(
+            "TTS talker LM returned unexpected output type: ${outputValue?.javaClass?.name}"
+        )
+        val batch0 = root.firstOrNull() as? Array<*> ?: throw IllegalStateException(
+            "TTS talker LM returned empty batch"
+        )
+        val first = batch0.firstOrNull() ?: throw IllegalStateException(
+            "TTS talker LM returned empty sequence"
+        )
+
         val fallbackSteps = (textTokenCount * ESTIMATED_STEPS_PER_TOKEN)
             .coerceIn(MIN_CODE_STEPS, MAX_CODE_STEPS)
-        val fallback = Array(NUM_CODEBOOKS) { LongArray(fallbackSteps) { 0L } }
-
-        val root = outputValue as? Array<*> ?: return fallback
-        val batch0 = root.firstOrNull() as? Array<*> ?: return fallback
-        val first = batch0.firstOrNull() ?: return fallback
 
         return when (first) {
             is FloatArray -> decode3dLogits(batch0, fallbackSteps)
             is Array<*> -> decode4dLogits(batch0, fallbackSteps)
-            else -> fallback
+            else -> throw IllegalStateException(
+                "TTS talker LM returned unsupported logits layout: ${first.javaClass.name}"
+            )
         }
     }
 
     private fun decode3dLogits(batch0: Array<*>, fallbackSteps: Int): Array<LongArray> {
         val logitsByStep = batch0.mapNotNull { it as? FloatArray }
         if (logitsByStep.isEmpty()) {
-            return Array(NUM_CODEBOOKS) { LongArray(fallbackSteps) { 0L } }
+            throw IllegalStateException("TTS talker LM produced no per-step logits")
         }
 
         val steps = logitsByStep.size.coerceIn(MIN_CODE_STEPS, MAX_CODE_STEPS)
-        val outputSteps = if (steps > 0) steps else fallbackSteps
+        val outputSteps = if (steps > 0) steps else throw IllegalStateException("TTS talker LM produced zero steps")
         val codes = Array(NUM_CODEBOOKS) { LongArray(outputSteps) { 0L } }
 
         for (step in 0 until outputSteps) {
@@ -412,11 +429,11 @@ class TtsEngine(private val modelManager: OnnxModelManager) {
             codebookSteps.mapNotNull { it as? FloatArray }
         }
         if (logitsByCodebook.isEmpty()) {
-            return Array(NUM_CODEBOOKS) { LongArray(fallbackSteps) { 0L } }
+            throw IllegalStateException("TTS talker LM produced no per-codebook logits")
         }
 
         val steps = logitsByCodebook.minOf { it.size }.coerceIn(MIN_CODE_STEPS, MAX_CODE_STEPS)
-        val outputSteps = if (steps > 0) steps else fallbackSteps
+        val outputSteps = if (steps > 0) steps else throw IllegalStateException("TTS talker LM produced zero steps")
         val codes = Array(NUM_CODEBOOKS) { LongArray(outputSteps) { 0L } }
 
         for (codebook in 0 until NUM_CODEBOOKS) {

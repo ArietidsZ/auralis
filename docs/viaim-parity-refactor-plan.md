@@ -1,1 +1,1 @@
-# PLACEHOLDER_WILL_REPLACE
+{{FILE:/workspace/parity-plan/viaim-parity-refactor-plan-v2.md}}

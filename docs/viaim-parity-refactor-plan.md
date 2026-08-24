@@ -19,7 +19,7 @@ Viaim 明确不做面对面双向语音互译；那是 Auralis 的主场。
 | 项 | 决策 |
 |---|---|
 | 转写 ASR | **仅 Qwen3-ASR 或 FunASR**；**越小越好** |
-| 转写默认（跳过确认后） | **Qwen3-ASR-0.6B int8**（同系列最小；不上 1.7B） |
+| 转写默认（跳过确认后） | **Qwen3-ASR-0.6B**（同系列最小；不上 1.7B；**量化不绑死**，由 PoC/你拍板） |
 | 更小备选 | FunASR **SenseVoiceSmall**（~250MB q8；方言面窄于 Qwen3） |
 | 禁止当主推 | Zipformer / Piper / Opus-MT 等写成「产品推荐」 |
 | 代码 | 暂可不动；先把方案写对 |
@@ -31,9 +31,9 @@ Viaim 明确不做面对面双向语音互译；那是 Auralis 的主场。
 
 ### 2.1 D1 — ASR（已锁）
 
-**主路径：`Qwen3-ASR-0.6B int8`（sherpa-onnx / 自有 ONNX Runtime）**
+**主路径：`Qwen3-ASR-0.6B`（sherpa-onnx / 自有 ONNX Runtime）**
 
-- 体积：约 **0.9GB**（conv≈42MB + enc≈174MB + dec≈721MB）
+- 体积：随量化而变（社区常见 INT8 打包约 **0.9GB**：conv≈42MB + enc≈174MB + dec≈721MB）；**INT8 不是产品决策，只是导出选项之一**
 - 能力：官方 **22 种中文方言/口音**；Apache-2.0
 - 延迟：端侧以 VAD/分句 +（若导出具备）KV-cache 解码为目标；**不以旧流式 Zipformer 顶替 Qwen3**
 - 工程债：把导出、KV-cache、端侧 RTF 做实——这是正业，不是退回 2023 小模型
@@ -60,7 +60,7 @@ Viaim 明确不做面对面双向语音互译；那是 Auralis 的主场。
 
 ### 2.4 运行时
 
-- ONNX Runtime Android（CPU / 骁龙 QNN 等当代 EP）；不要再写「NNAPI 跑 INT4」当卖点
+- ONNX Runtime Android（CPU / 骏龙 QNN 等当代 EP）；不要再写「NNAPI 跑 INT4」当卖点
 - 音频：Oboe/低延迟路径；听译 TTS 走 `USAGE_MEDIA` → 普通 BT 耳机（绿）
 
 ---
@@ -99,7 +99,7 @@ Viaim 明确不做面对面双向语音互译；那是 Auralis 的主场。
 
 ## 6. 成功定义
 
-> 无网、两人各说方言/语言：App 用 **Qwen3-ASR-0.6B** 听懂，现代 MT 译出，**Qwen3-TTS（或标明的临时降级）** 出声；并支持面对面双向。不宣称平齐 Viaim 纪要全家桶，不把过时小模型写成推荐栈。
+> 无网、两人各说方言/语言：App 用 **Qwen3-ASR-0.6B**（量化待定）听懂，现代 MT 译出，**Qwen3-TTS（或标明的临时降级）** 出声；并支持面对面双向。不宣称平齐 Viaim 纪要全家桶，不把过时小模型写成推荐栈。
 
 ---
 
@@ -107,4 +107,4 @@ Viaim 明确不做面对面双向语音互译；那是 Auralis 的主场。
 
 - v1：初版 Viaim 平齐  
 - v2：五路联网研究（曾误把 Zipformer/Piper 写成主路径）  
-- **v3（本版）：** 用户否决过时主推；ASR 锁定 Qwen3/FunASR 且默认 0.6B；TTS/MT 改回当代主路径表述；修复 main 文档损坏
+- **v3（本版）：** 用户否决过时主推；ASR 锁定 Qwen3/FunASR 且默认 0.6B；**不锁 INT8**；TTS/MT 当代主路径；修复 main 文档损坏

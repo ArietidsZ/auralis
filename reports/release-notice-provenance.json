@@ -1,0 +1,550 @@
+{
+  "schema_version": 1,
+  "verified_date": "2026-09-07",
+  "scope": "Android release native and JVM dependency notices; upstream files preserved byte-for-byte.",
+  "files": [
+    {
+      "path": "licenses/kissfft-COPYING.txt",
+      "sha256": "a2840585f8411be8e6826a31ef15ae65c950bd74a2437a73b013398a934ad0c6",
+      "size_bytes": 246,
+      "source_url": "https://github.com/mborgerding/kissfft/archive/febd4caeed32e33ad8b2e0bb5ea77542c40f18ec.zip",
+      "source_member": "COPYING",
+      "revision": "febd4caeed32e33ad8b2e0bb5ea77542c40f18ec"
+    },
+    {
+      "path": "licenses/kissfft-LICENSE-BSD-3-Clause.txt",
+      "sha256": "4d6bcab46f27d6d0c878e8305d4bdcfe040d52bf6656b9771f04c9fb9902c0ed",
+      "size_bytes": 1830,
+      "source_url": "https://github.com/mborgerding/kissfft/archive/febd4caeed32e33ad8b2e0bb5ea77542c40f18ec.zip",
+      "source_member": "LICENSES/BSD-3-Clause",
+      "revision": "febd4caeed32e33ad8b2e0bb5ea77542c40f18ec"
+    },
+    {
+      "path": "licenses/kaldi-native-fbank-LICENSE-1.22.3.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "size_bytes": 11358,
+      "source_url": "https://github.com/csukuangfj/kaldi-native-fbank/archive/refs/tags/v1.22.3.tar.gz",
+      "source_member": "LICENSE",
+      "revision": "1.22.3"
+    },
+    {
+      "path": "licenses/kaldi-decoder-LICENSE-0.3.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "size_bytes": 11358,
+      "source_url": "https://github.com/k2-fsa/kaldi-decoder/archive/refs/tags/v0.3.0.tar.gz",
+      "source_member": "LICENSE",
+      "revision": "0.3.0"
+    },
+    {
+      "path": "licenses/kaldifst-LICENSE-1.8.0.txt",
+      "sha256": "a682d6efd1ee5dee08a8e405c233c2c198ea70ae0718129daa83ab58cfe31c5d",
+      "size_bytes": 11728,
+      "source_url": "https://github.com/k2-fsa/kaldifst/archive/refs/tags/v1.8.0.tar.gz",
+      "source_member": "LICENSE",
+      "revision": "1.8.0"
+    },
+    {
+      "path": "licenses/simple-sentencepiece-LICENSE-0.7.txt",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "size_bytes": 11357,
+      "source_url": "https://github.com/pkufool/simple-sentencepiece/archive/refs/tags/v0.7.tar.gz",
+      "source_member": "LICENSE",
+      "revision": "0.7"
+    },
+    {
+      "path": "licenses/openfst-COPYING-1.8.5-2026-07-09.txt",
+      "sha256": "4300529197035fd3452350718a0b8cee984e9412c9932d7f35fcde849fc97a4b",
+      "size_bytes": 559,
+      "source_url": "https://github.com/csukuangfj/openfst/archive/refs/tags/v1.8.5-2026-07-09.tar.gz",
+      "source_member": "COPYING",
+      "revision": "1.8.5-2026-07-09"
+    },
+    {
+      "path": "licenses/google-play-asset-delivery-2.2.2-LICENSE.txt",
+      "sha256": "0571eff6495ebd4c1333e84358da40d4cfa98470fd57cc321a1a7f54f15d9480",
+      "size_bytes": 760357,
+      "source_url": "https://dl.google.com/dl/android/maven2/com/google/android/play/asset-delivery/2.2.2/asset-delivery-2.2.2.aar",
+      "source_member": "LICENSE",
+      "artifact_sha256": "23a60c530cb9bab676a4535c207cb31d3256fab8847c796b607310457835bc72",
+      "identical_source_member": "third_party_licenses.txt"
+    },
+    {
+      "path": "licenses/google-play-asset-delivery-2.2.2-third_party_licenses.json",
+      "sha256": "5fa5c7c51a8f04e74bfb50db73f2401fb9cd31984ae2a9b04a0b534f2d78f963",
+      "size_bytes": 3623,
+      "source_url": "https://dl.google.com/dl/android/maven2/com/google/android/play/asset-delivery/2.2.2/asset-delivery-2.2.2.aar",
+      "source_member": "third_party_licenses.json",
+      "text_file": "licenses/google-play-asset-delivery-2.2.2-LICENSE.txt"
+    },
+    {
+      "path": "licenses/google-play-core-common-2.0.3-LICENSE.txt",
+      "sha256": "dad11d2da19198161f392a355c870025157763b1942fc30f789308f678269883",
+      "size_bytes": 727487,
+      "source_url": "https://dl.google.com/dl/android/maven2/com/google/android/play/core-common/2.0.3/core-common-2.0.3.aar",
+      "source_member": "LICENSE",
+      "artifact_sha256": "4303255f152c59b954919bb471d14ee5fed2df783565dea8528b08083ba7342b",
+      "identical_source_member": "third_party_licenses.txt"
+    },
+    {
+      "path": "licenses/google-play-core-common-2.0.3-third_party_licenses.json",
+      "sha256": "24a3e25a34dae41fd5b06aa6fd2371967357431530f15296a579798af0a51be5",
+      "size_bytes": 3538,
+      "source_url": "https://dl.google.com/dl/android/maven2/com/google/android/play/core-common/2.0.3/core-common-2.0.3.aar",
+      "source_member": "third_party_licenses.json",
+      "text_file": "licenses/google-play-core-common-2.0.3-LICENSE.txt"
+    }
+  ],
+  "deduplication": [
+    {
+      "source_url": "https://dl.google.com/dl/android/maven2/com/google/android/play/asset-delivery/2.2.2/asset-delivery-2.2.2.aar",
+      "omitted_member": "third_party_licenses.txt",
+      "reason": "Byte-for-byte identical to LICENSE",
+      "retained_file": "licenses/google-play-asset-delivery-2.2.2-LICENSE.txt",
+      "sha256": "0571eff6495ebd4c1333e84358da40d4cfa98470fd57cc321a1a7f54f15d9480"
+    },
+    {
+      "source_url": "https://dl.google.com/dl/android/maven2/com/google/android/play/core-common/2.0.3/core-common-2.0.3.aar",
+      "omitted_member": "third_party_licenses.txt",
+      "reason": "Byte-for-byte identical to LICENSE",
+      "retained_file": "licenses/google-play-core-common-2.0.3-LICENSE.txt",
+      "sha256": "dad11d2da19198161f392a355c870025157763b1942fc30f789308f678269883"
+    },
+    {
+      "source_url": "https://dl.google.com/dl/android/maven2/com/google/android/play/asset-delivery-ktx/2.2.2/asset-delivery-ktx-2.2.2.aar",
+      "artifact_sha256": "8d24fddaff2d63d298d1536a20454dbca2362c5bf63087edc61a852426968c27",
+      "omitted_members": [
+        "LICENSE",
+        "third_party_licenses.txt",
+        "third_party_licenses.json"
+      ],
+      "text_sha256": "662b0f3dd06aa6b6d7c158923c60fcc3ff035b84d8aa56a45d6783faa3014e67",
+      "index_sha256": "5bc374c3957994910693d3a801532867a3a300316aff633ce9105802d0c3754a",
+      "reason": "LICENSE equals third_party_licenses.txt; every one of the 56 indexed byte blocks equals the same-named block in retained asset-delivery 2.2.2 LICENSE. Original index offsets differ; use the retained asset-delivery index.",
+      "retained_text": "licenses/google-play-asset-delivery-2.2.2-LICENSE.txt",
+      "retained_index": "licenses/google-play-asset-delivery-2.2.2-third_party_licenses.json",
+      "blocks": [
+        {
+          "name": "Android SDK Platforms",
+          "sha256": "8598f4e111252d203df6c4ec0b9274d8d9ea034d4fcf13cd50b2b15de23a5e62",
+          "length": 16008,
+          "source_start": 26,
+          "retained_start": 1425
+        },
+        {
+          "name": "AndroidX activity library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 16064,
+          "retained_start": 17463
+        },
+        {
+          "name": "AndroidX annotation experimental library",
+          "sha256": "0366083b9f13b07a2bbbd01979783001c96c4d7037068c4226bf116e05780105",
+          "length": 10691,
+          "source_start": 26804,
+          "retained_start": 28203
+        },
+        {
+          "name": "AndroidX annotation library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 737536,
+          "retained_start": 738935
+        },
+        {
+          "name": "AndroidX architecture core common library",
+          "sha256": "2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3",
+          "length": 10694,
+          "source_start": 37541,
+          "retained_start": 38940
+        },
+        {
+          "name": "AndroidX architecture core runtime library",
+          "sha256": "2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3",
+          "length": 10694,
+          "source_start": 48282,
+          "retained_start": 49681
+        },
+        {
+          "name": "AndroidX asynclayoutinflater library",
+          "sha256": "f01b55631ca239fda6f323b88f16e0fd3b211987704cf619644602641d04e526",
+          "length": 10694,
+          "source_start": 59017,
+          "retained_start": 60416
+        },
+        {
+          "name": "AndroidX collection library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 748263,
+          "retained_start": 749662
+        },
+        {
+          "name": "AndroidX concurrent futures library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 69751,
+          "retained_start": 71150
+        },
+        {
+          "name": "AndroidX coordinatorlayout library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 80485,
+          "retained_start": 81884
+        },
+        {
+          "name": "AndroidX core ktx library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 91210,
+          "retained_start": 92609
+        },
+        {
+          "name": "AndroidX core library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 101931,
+          "retained_start": 103330
+        },
+        {
+          "name": "AndroidX cursoradapter library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 112661,
+          "retained_start": 114060
+        },
+        {
+          "name": "AndroidX customview library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 123388,
+          "retained_start": 124787
+        },
+        {
+          "name": "AndroidX documentfile library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 134117,
+          "retained_start": 135516
+        },
+        {
+          "name": "AndroidX drawerlayout library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 144846,
+          "retained_start": 146245
+        },
+        {
+          "name": "AndroidX fragment library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 155571,
+          "retained_start": 156970
+        },
+        {
+          "name": "AndroidX interpolator library",
+          "sha256": "91829f267b9311ecc8b9996c372c0c22e67d1a994aeec2db94bbb45a5105c40c",
+          "length": 10693,
+          "source_start": 166300,
+          "retained_start": 167699
+        },
+        {
+          "name": "AndroidX legacy coreui library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 177028,
+          "retained_start": 178427
+        },
+        {
+          "name": "AndroidX legacy coreutils library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 187761,
+          "retained_start": 189160
+        },
+        {
+          "name": "AndroidX legacy v4 library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 198487,
+          "retained_start": 199886
+        },
+        {
+          "name": "AndroidX lifecycle common library",
+          "sha256": "2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3",
+          "length": 10694,
+          "source_start": 209220,
+          "retained_start": 210619
+        },
+        {
+          "name": "AndroidX lifecycle livedatacore library",
+          "sha256": "2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3",
+          "length": 10694,
+          "source_start": 219958,
+          "retained_start": 221357
+        },
+        {
+          "name": "AndroidX lifecycle runtime library",
+          "sha256": "2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3",
+          "length": 10694,
+          "source_start": 230691,
+          "retained_start": 232090
+        },
+        {
+          "name": "AndroidX lifecycle viewmodel library",
+          "sha256": "2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3",
+          "length": 10694,
+          "source_start": 241426,
+          "retained_start": 242825
+        },
+        {
+          "name": "AndroidX lifecycle viewmodel savedstate library",
+          "sha256": "91829f267b9311ecc8b9996c372c0c22e67d1a994aeec2db94bbb45a5105c40c",
+          "length": 10693,
+          "source_start": 252172,
+          "retained_start": 253571
+        },
+        {
+          "name": "AndroidX loader library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 262893,
+          "retained_start": 264292
+        },
+        {
+          "name": "AndroidX localbroadcastmanager library",
+          "sha256": "91829f267b9311ecc8b9996c372c0c22e67d1a994aeec2db94bbb45a5105c40c",
+          "length": 10693,
+          "source_start": 273631,
+          "retained_start": 275030
+        },
+        {
+          "name": "AndroidX media base library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 284356,
+          "retained_start": 285755
+        },
+        {
+          "name": "AndroidX print library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 295078,
+          "retained_start": 296477
+        },
+        {
+          "name": "AndroidX savedstate library",
+          "sha256": "d01ce9a0672de1a119755c19a79cfbe9b2916379fa0e67187fa413484e4e624d",
+          "length": 10689,
+          "source_start": 305805,
+          "retained_start": 307204
+        },
+        {
+          "name": "AndroidX swiperefreshlayout library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 316534,
+          "retained_start": 317933
+        },
+        {
+          "name": "AndroidX tracing library",
+          "sha256": "2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3",
+          "length": 10694,
+          "source_start": 327258,
+          "retained_start": 328657
+        },
+        {
+          "name": "AndroidX versionedparcelable library",
+          "sha256": "3c5edbd56525e321a53eda1a587f1ca1c78b30481fb8abd2ba93f9c610f861ba",
+          "length": 10695,
+          "source_start": 337993,
+          "retained_start": 339392
+        },
+        {
+          "name": "AndroidX viewpager library",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "length": 10695,
+          "source_start": 348719,
+          "retained_start": 350118
+        },
+        {
+          "name": "Animal Sniffer",
+          "sha256": "32d66e2183bf8e7435b702284b960a4803f1df6eb138a02b3fb81f6c6a5e1351",
+          "length": 1096,
+          "source_start": 359433,
+          "retained_start": 360832
+        },
+        {
+          "name": "Checker Framework Annotations",
+          "sha256": "0a0d953557de1c47817def2774d227d1ebd9a52cc120245f33fbd9614ff796b5",
+          "length": 1892,
+          "source_start": 360563,
+          "retained_start": 361962
+        },
+        {
+          "name": "Dagger",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "length": 11358,
+          "source_start": 362466,
+          "retained_start": 363865
+        },
+        {
+          "name": "Error Prone",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "length": 11357,
+          "source_start": 373840,
+          "retained_start": 375239
+        },
+        {
+          "name": "Google Auto",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "length": 11358,
+          "source_start": 385213,
+          "retained_start": 386612
+        },
+        {
+          "name": "Guava JDK5",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "length": 11358,
+          "source_start": 407961,
+          "retained_start": 409360
+        },
+        {
+          "name": "Guava JDK7",
+          "sha256": "01b4bb058a35cf06dde9e3447b34f4af535df2ec1423393893e517e8ee83ba53",
+          "length": 11362,
+          "source_start": 419334,
+          "retained_start": 420733
+        },
+        {
+          "name": "HighwayHash",
+          "sha256": "8c6db340475136df3c1201d458fa5755698eace76e510471ecc9d857d6083dac",
+          "length": 11359,
+          "source_start": 396587,
+          "retained_start": 397986
+        },
+        {
+          "name": "J2ObjC",
+          "sha256": "22418fba3d2030cc22690f1c0c38ae423d5540110e9d61519027e3210ac29726",
+          "length": 81008,
+          "source_start": 430707,
+          "retained_start": 432106
+        },
+        {
+          "name": "JSR 250",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "length": 11358,
+          "source_start": 511727,
+          "retained_start": 513126
+        },
+        {
+          "name": "JSR 305",
+          "sha256": "fb9bdee1ef51ee85a17d04fda7fbf0ea2af92454b151a252c13cea7a720f3a8b",
+          "length": 1602,
+          "source_start": 523097,
+          "retained_start": 524496
+        },
+        {
+          "name": "JSR 330",
+          "sha256": "9cf3b8a82221b4a6382ce164d099c79a2827e160d5fd533d07bc63f69ca6b34f",
+          "length": 11365,
+          "source_start": 524711,
+          "retained_start": 526110
+        },
+        {
+          "name": "JSpecify",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "length": 11358,
+          "source_start": 536089,
+          "retained_start": 537488
+        },
+        {
+          "name": "JsInterop Annotations",
+          "sha256": "b3e17cd48de9bfefe076d376cc136df378ebfceffbb48069205c0dd0231a0cae",
+          "length": 11307,
+          "source_start": 547473,
+          "retained_start": 548872
+        },
+        {
+          "name": "Kotlin",
+          "sha256": "c15ad8d2096909c1116f59ea0d4d1c83a0390feec493a2de116e6d489082a7c4",
+          "length": 112095,
+          "source_start": 558791,
+          "retained_start": 560190
+        },
+        {
+          "name": "Kotlin coroutines",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "length": 11357,
+          "source_start": 670908,
+          "retained_start": 672307
+        },
+        {
+          "name": "SafeParcelable library",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "length": 11358,
+          "source_start": 682292,
+          "retained_start": 683691
+        },
+        {
+          "name": "apksig",
+          "sha256": "38751245389e1e23f73e6f5384b5cbe7fa972cc4410c5adc9c04b082a0b9561a",
+          "length": 10695,
+          "source_start": 693661,
+          "retained_start": 695060
+        },
+        {
+          "name": "archive_patcher",
+          "sha256": "9e69074ca08973d9129cfd12658e6bc6cc502edb3bb99824db836726cb11a86f",
+          "length": 12521,
+          "source_start": 704376,
+          "retained_start": 705775
+        },
+        {
+          "name": "kotlinx_atomicfu",
+          "sha256": "43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1",
+          "length": 11356,
+          "source_start": 716918,
+          "retained_start": 718317
+        },
+        {
+          "name": "p2putils",
+          "sha256": "299d8188dce0db22d8e31cb86dc3c15e4263bf870a1cf99ecce37fe91415498d",
+          "length": 9217,
+          "source_start": 728287,
+          "retained_start": 729686
+        }
+      ]
+    },
+    {
+      "retained_text": "licenses/google-play-core-common-2.0.3-LICENSE.txt",
+      "reason": "Cannot drop this vendor notice: three indexed blocks differ from asset-delivery.",
+      "distinct_blocks": [
+        "AndroidX annotation jvm library",
+        "AndroidX collection jvm library",
+        "Kotlin"
+      ]
+    }
+  ],
+  "native_evidence": {
+    "link_command": "sherpa-onnx/jni/CMakeFiles/sherpa-onnx-jni.dir/link.txt in the Android native build directory",
+    "retained_symbols_checked": [
+      "kiss_fft",
+      "kiss_fft_alloc",
+      "kiss_fftr",
+      "knf::",
+      "kaldi_decoder::",
+      "fst::",
+      "ssentencepiece::"
+    ],
+    "sherpa_revision": "917bed95c8e5c7c18aa4d69fea42e9ef8ef0a60e"
+  },
+  "llvm_runtime": {
+    "ndk_version": "27.3.13750724",
+    "link_mode": "c++_static",
+    "license": "Apache-2.0 WITH LLVM-exception",
+    "source_url": "https://www.llvm.org/docs/DeveloperPolicy.html#new-llvm-project-license-framework",
+    "decision": "No complete toolchain notices copied: compiler-added runtime portions are covered by the LLVM exception."
+  }
+}

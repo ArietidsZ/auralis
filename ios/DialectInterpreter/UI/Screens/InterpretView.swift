@@ -247,7 +247,7 @@ struct InterpretView: View {
 
                 Button(action: togglePipeline) {
                     Image(systemName: isRunning ? "stop.fill" : "mic.fill")
-                        .foregroundStyle(.white)
+                        .foregroundStyle(isRunning ? Color.white : Color.appOnAccent)
                         .font(.system(size: 18))
                         .frame(width: 48, height: 48)
                         .background(isRunning ? Color.appRecordingRed : .appAccent)

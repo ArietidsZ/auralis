@@ -46,6 +46,7 @@ struct ModelDownloadView: View {
                 }
                 Button("从文件夹安装") { showImporter = true }
                     .buttonStyle(.borderedProminent)
+                    .foregroundStyle(Color.appOnAccent)
                     .disabled(isInstalling)
                 Button("安装应用附带的模型") { startInstallation(from: nil) }
                     .disabled(isInstalling)

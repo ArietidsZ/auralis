@@ -254,7 +254,7 @@ class AsrEngine(private val modelManager: OnnxModelManager) : SpeechRecognizer {
             Log.i(
                 TAG,
                 "Transcribed ${audioData.size} samples in ${elapsedMs}ms " +
-                    "(${pieces.size} segment(s)): [$lang] $text"
+                    "(${pieces.size} segment(s))"
             )
             TranscriptionResult(
                 text = text,

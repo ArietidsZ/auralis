@@ -1,0 +1,2 @@
+# Vendor notices and their byte-offset indices must retain upstream bytes.
+licenses/** -text -whitespace

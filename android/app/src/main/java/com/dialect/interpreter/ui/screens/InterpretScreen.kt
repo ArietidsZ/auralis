@@ -71,6 +71,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -103,6 +104,7 @@ import com.dialect.interpreter.ui.theme.AppColors
 import com.dialect.interpreter.ui.theme.RadiusBubble
 import com.dialect.interpreter.ui.theme.RadiusCard
 import com.dialect.interpreter.ui.theme.RadiusPill
+import com.dialect.interpreter.ui.theme.RecordRed
 
 /**
  * Main interpretation screen (spec 03 U01/U03): dark control area on top,
@@ -759,14 +761,15 @@ private fun InterpretBottomBar(
                     },
                 shape = CircleShape,
                 colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = if (recording) AppColors.recordRed() else AppColors.accent(),
+                    containerColor = if (recording) RecordRed else AppColors.accent(),
+                    contentColor = if (recording) Color.White
+                        else MaterialTheme.colorScheme.onPrimary,
                     disabledContainerColor = AppColors.textSecondary().copy(alpha = 0.24f),
                 ),
             ) {
                 Icon(
                     if (recording) Icons.Filled.Stop else Icons.Filled.Mic,
                     contentDescription = null,
-                    tint = androidx.compose.ui.graphics.Color.White,
                     modifier = Modifier.size(24.dp),
                 )
             }

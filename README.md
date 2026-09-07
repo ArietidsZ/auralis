@@ -8,9 +8,11 @@
 
 <p align="center"><strong>Developer Preview</strong> · <code>v0.1.0-preview.1</code> · <a href="README.zh-CN.md">中文</a></p>
 
-Auralis is a native Android and iOS app that runs **ASR → MT → TTS** entirely on-device. It does not send audio or text to a network service. Voice cloning uses a recorded reference you provide, not a cloud profile.
+Auralis is a native Android and iOS app that runs **ASR → MT → TTS** entirely on-device. It does not send audio or text to a network service. Voice cloning uses a local reference recording you provide.
 
-Developer Preview: native clients, source builds, and host/emulator checks. Model packages stay `draft` until quality and device validation finish.
+[Download signed Android preview](https://github.com/ArietidsZ/auralis/releases/download/v0.1.0-preview.1/Auralis-v0.1.0-preview.1-arm64-v8a.apk) · [Release files and checksums](https://github.com/ArietidsZ/auralis/releases/tag/v0.1.0-preview.1)
+
+Developer Preview: native clients, source builds, and host/emulator checks. Provision weights separately. Model packages remain `draft`, keeping the app readiness gate closed until qualification finishes.
 
 ## What works in this preview
 
@@ -27,7 +29,7 @@ Developer Preview: native clients, source builds, and host/emulator checks. Mode
 |---|---|
 | Shared ASR/MT/TTS manifests | Still **`draft`**. Draft packages never count as app-ready. |
 | Physical phones | Not in this release. Host/emulator numbers are engineering checks only. |
-| CI | Run `34114668822` produced three-slice native builds, an unsigned iOS device link, and a simulator app. Remaining failures: Swift tests missing import / SwiftPM core, and Android Aliyun 502 (being fixed). Not a green matrix; counts and job URL later. |
+| CI | Android / iOS source builds and tests passed; see [release verification](docs/releases/verification-v0.1.0-preview.1.md). |
 | Quality, energy, thermal, p95 | Open. |
 | TTS integer quantization / CP-only BF16 | Failed the declared voice-quality gates; FP32 remains the default. |
 | Tested CoreML code-predictor configuration | Slower than CPU, with numerical differences; excluded from defaults. |

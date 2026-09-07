@@ -35,6 +35,7 @@ extension Color {
 
     // Generated from the canonical brand assets, including dark mode.
     static let appAccent = Color("AccentColor")
+    static let appOnAccent = Color(light: 0xFFFFFF, dark: 0x0F191D)
 
     // Backgrounds
     static let appBg = Color(light: 0xF6F8F7, dark: 0x0F191D)

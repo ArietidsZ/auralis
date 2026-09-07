@@ -8,9 +8,11 @@
 
 <p align="center"><strong>Developer Preview</strong> · <code>v0.1.0-preview.1</code> · <a href="README.md">English</a></p>
 
-Auralis 是原生 Android / iOS 应用，在设备上完成 **ASR → MT → TTS**，不把音频或文本送到网络服务。声音克隆只用你提供的参考录音，没有云端声纹库。
+Auralis 是原生 Android / iOS 应用，在设备上完成 **ASR → MT → TTS**，不把音频或文本送到网络服务。声音克隆使用你提供的本地参考录音。
 
-Developer Preview：原生客户端、源码构建、主机/模拟器检查。模型包保持 `draft`，质量和真机验证尚未完成。
+[下载 Android 签名预览版](https://github.com/ArietidsZ/auralis/releases/download/v0.1.0-preview.1/Auralis-v0.1.0-preview.1-arm64-v8a.apk) · [发布文件与校验和](https://github.com/ArietidsZ/auralis/releases/tag/v0.1.0-preview.1)
+
+Developer Preview：原生客户端、源码构建、主机/模拟器检查。权重单独配置；模型包保持 `draft`，App 就绪门仍关闭，质量与真机验证尚未完成。
 
 ## 本预览已有内容
 
@@ -27,7 +29,7 @@ Developer Preview：原生客户端、源码构建、主机/模拟器检查。�
 |---|---|
 | 共享 ASR/MT/TTS manifest | 仍为 **`draft`**。draft 包不能当作 App 已就绪。 |
 | 实体手机 | 本次未提供。主机/模拟器数字只是工程检查。 |
-| CI | Run `34114668822` 已产出三切片 native、未签名 iOS device link 和 simulator app。仍失败：Swift 测试缺 import / SwiftPM core，以及 Android Aliyun 502（修复中）。不是整条绿；计数和 job URL 后补。 |
+| CI | Android / iOS 原生构建与测试均已通过；运行记录见[发布验收](docs/releases/verification-v0.1.0-preview.1.md)。 |
 | 质量、能耗、热、p95 | 未完成。 |
 | TTS 整数量化 / 仅 CP 的 BF16 | 未通过既定音色门，默认保留 FP32。 |
 | 已测试的 CoreML code predictor | 比 CPU 更慢，并有数值差异，未进入默认配置。 |

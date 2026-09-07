@@ -87,7 +87,7 @@ Both 1024 and 2048 whole-audio diagnostic runs were killed on `noise1-en`. Those
 
 Raw outputs, full references, every segment, debug/truncation logs, per-case CER/RTF, model-load timing, memory snapshots, process commands, and guard failures are retained at:
 
-`/Users/arietids/Library/Caches/Auralis/asr/experiments/`
+`$AURALIS_CACHE/asr/experiments/`
 
 - `context-2026-09-07/`: audio-only, model-only, old-preload, and whole/selected diagnostic controls.
 - `context-selected-2026-09-07/`: the three selected-only policies.
@@ -98,14 +98,14 @@ Raw outputs, full references, every segment, debug/truncation logs, per-case CER
 Reproduction:
 
 ```sh
-/Users/arietids/Library/Caches/Auralis/asr/venv/bin/python \
+$AURALIS_CACHE/asr/venv/bin/python \
   docs/specs/2026-09-05-auralis/benchmarks/asr_context_ablation.py \
-  --output /Users/arietids/Library/Caches/Auralis/asr/experiments/context-2026-09-07
+  --output $AURALIS_CACHE/asr/experiments/context-2026-09-07
 
-/Users/arietids/Library/Caches/Auralis/asr/venv/bin/python \
+$AURALIS_CACHE/asr/venv/bin/python \
   docs/specs/2026-09-05-auralis/benchmarks/asr_context_ablation.py \
   --selected-only \
-  --output /Users/arietids/Library/Caches/Auralis/asr/experiments/context-selected-2026-09-07
+  --output $AURALIS_CACHE/asr/experiments/context-selected-2026-09-07
 ```
 
 ## Occam selection

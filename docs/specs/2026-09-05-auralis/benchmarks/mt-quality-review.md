@@ -18,11 +18,11 @@ Run from the repository root:
 
 ```sh
 python3 docs/specs/2026-09-05-auralis/benchmarks/mt_quality_ablation.py \
-  --model /Users/arietids/Library/Caches/Auralis/mt/models/Hy-MT1.5-1.8B-1.25bit-stq43.gguf \
+  --model $AURALIS_CACHE/mt/models/Hy-MT1.5-1.8B-1.25bit-stq43.gguf \
   --output docs/specs/2026-09-05-auralis/benchmarks/mt-quality-stq
 
 python3 docs/specs/2026-09-05-auralis/benchmarks/mt_quality_ablation.py \
-  --model /Users/arietids/Library/Caches/Auralis/mt/quality/HY-MT1.5-1.8B-Q4_K_M.gguf \
+  --model $AURALIS_CACHE/mt/quality/HY-MT1.5-1.8B-Q4_K_M.gguf \
   --output docs/specs/2026-09-05-auralis/benchmarks/mt-quality-q4
 ```
 
@@ -51,7 +51,7 @@ All inference uses four generation and batch threads, CPU execution (`-ngl 0`), 
 | `libhymt_core.dylib` | `4e1f56a710b121d3cde5cb9518dea294f973291b681d5ac9f1cca3755a9847a8` | — |
 | `build-host/bin/llama-completion` | `0546a7ad69b42b34eb2b6e503da7545c836f967688b8794c8f2bd4014713e56c` | — |
 
-Q4_K_M is in the persistent cache at `/Users/arietids/Library/Caches/Auralis/mt/quality/HY-MT1.5-1.8B-Q4_K_M.gguf`. It was downloaded directly from the fixed HF revision, without global network configuration changes. It costs 671,219,808 additional bytes, or 2.453 times the model storage. Resident memory, energy, and phone latency were not measured.
+Q4_K_M is in the persistent cache at `$AURALIS_CACHE/mt/quality/HY-MT1.5-1.8B-Q4_K_M.gguf`. It was downloaded directly from the fixed HF revision, without global network configuration changes. It costs 671,219,808 additional bytes, or 2.453 times the model storage. Resident memory, energy, and phone latency were not measured.
 
 The [AngelSlim model card](https://huggingface.co/AngelSlim/Hy-MT1.5-1.8B-1.25bit-GGUF) identifies a fine-tuned 1.25-bit lineage over the base translation model. The comparison therefore changes deployed candidate weights and quantization, not just bit width on otherwise identical weights. It cannot isolate quantization as the sole cause of a quality difference.
 

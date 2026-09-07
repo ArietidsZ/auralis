@@ -92,5 +92,60 @@ class ReporterExitTests(unittest.TestCase):
         self.assertEqual(reporter.aggregate_exit(), 1)
 
 
+class FailureEvidenceTests(unittest.TestCase):
+    def test_timeout_reports_failure_and_preserves_partial_output(self):
+        import tempfile
+        reporter = Reporter()
+        code = "import sys,time; print('partial stdout',flush=True); " \
+               "print('partial stderr',file=sys.stderr,flush=True); time.sleep(30)"
+        result = reporter.run_cmd("timeout", [sys.executable, "-u", "-c", code], timeout=1)
+        self.assertEqual(result.status, "fail")
+        self.assertIn("timed out", result.reason)
+        with tempfile.TemporaryDirectory() as tmp:
+            reporter.write_json(Path(tmp), "timeout")
+            log = (Path(tmp) / "logs/timeout.log").read_text()
+            self.assertIn("partial stdout", log)
+            self.assertIn("partial stderr", log)
+
+    def test_tail_never_lets_stderr_evict_stdout_errors(self):
+        from verify_lib import _tail
+        stdout = "x" * 400 + "\nerror: the real compiler failure\n"
+        stderr = "y" * 700 + "warning: manifest deprecation"
+        summary = _tail(stdout, stderr)
+        self.assertIn("the real compiler failure", summary)
+        self.assertIn("--- stderr ---", summary)
+        self.assertIn("manifest deprecation", summary)
+
+    def test_failed_command_writes_full_output_to_evidence_dir(self):
+        import tempfile
+        from pathlib import Path as P
+        reporter = Reporter()
+        code = "import sys; sys.stdout.write('OUT-progress\\nOUT-error: boom\\n'); " \
+               "sys.stderr.write('WARN-noise\\n' * 200); raise SystemExit(1)"
+        reporter.run_cmd("swift-core-build", [sys.executable, "-c", code])
+        with tempfile.TemporaryDirectory() as tmp:
+            out = P(tmp)
+            reporter.write_json(out, "scope-test")
+            log = out / "logs" / "swift-core-build.log"
+            self.assertTrue(log.is_file())
+            text = log.read_text()
+            self.assertIn("OUT-error: boom", text)
+            self.assertIn("WARN-noise", text)  # full stderr kept, untruncated
+            self.assertGreater(len(text), 1200)  # beyond the inline tail limit
+            report = json.loads(next((out).glob("verify-scope-test-*.json")).read_text())
+            entry = next(r for r in report["results"] if r["id"] == "swift-core-build")
+            self.assertEqual(entry["details"]["logFile"], "logs/swift-core-build.log")
+
+    def test_passing_commands_do_not_emit_logs(self):
+        import tempfile
+        from pathlib import Path as P
+        reporter = Reporter()
+        reporter.run_cmd("ok", [sys.executable, "-c", "print('fine')"])
+        with tempfile.TemporaryDirectory() as tmp:
+            out = P(tmp)
+            reporter.write_json(out, "scope-test")
+            self.assertFalse((out / "logs").exists())
+
+
 if __name__ == "__main__":
     unittest.main()

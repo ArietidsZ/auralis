@@ -6,6 +6,7 @@ import android.media.AudioFocusRequest
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
+import android.os.Build
 import android.os.SystemClock
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
@@ -187,6 +188,16 @@ class AudioPlayer(private val context: Context) : AudioPlayback {
                         run.track = newTrack
                         run.initialUnderruns = newTrack.underrunCount
                     }
+                    if (Build.VERSION.SDK_INT < 31) {
+                        // Older Android ties startup to the effective buffer
+                        // size. Use real remaining PCM, not a partial write's
+                        // free-space count; restore space for larger chunks.
+                        val wanted = minOf(pcm.size - offset, track.bufferCapacityInFrames)
+                        if (wanted != track.bufferSizeInFrames) {
+                            val size = track.setBufferSizeInFrames(wanted)
+                            if (size <= 0) throw AudioPlaybackFailure("AudioTrack buffer resize failed: $size")
+                        }
+                    }
                     val n = track.write(pcm, offset, pcm.size - offset, AudioTrack.WRITE_NON_BLOCKING)
                     if (n > 0 && !run.started) {
                         // Claim audio focus only when real PCM is primed and
@@ -337,6 +348,12 @@ class AudioPlayer(private val context: Context) : AudioPlayback {
         if (track.state != AudioTrack.STATE_INITIALIZED) {
             track.release()
             throw AudioPlaybackFailure("AudioTrack failed to initialize")
+        }
+        if (Build.VERSION.SDK_INT >= 31) {
+            // Capacity is buffering space, not a minimum utterance length.
+            // A short first chunk or a tail after underrun must start without
+            // filling the entire buffer. PCM is never padded to satisfy it.
+            track.setStartThresholdInFrames(1)
         }
         track.setVolume(volume)
         audioTrack = track

@@ -9,7 +9,7 @@
 - 中文参考为先前已记录的 say/Tingting 合成录音，经 `afconvert -f WAVE -d LEF32@16000` 转为 **16 kHz Float32**；英文参考为已记录的 say/Samantha **24 kHz Float32**。未采麦、未读取用户私人声音档案。
 - 显式走 host engine 路径，不绕过或修改生产 App 的 readiness 状态门。运行使用 temperature=0.9、topK=50、repetitionPenalty=1.05、seed=20260906，均为现有默认参数；线程数 4。harness 的短句安全上限为 384 帧，生产默认 2048 帧未改。两例均提前产生 EOS，没有碰到该上限。
 
-持久证据：`/Users/arietids/Library/Caches/Auralis/reports/ios-tts-current-runtime/`，包括当前 `bundle/current-tts` 可执行文件、完整编译命令、生产源码快照/hash、harness、参考/输出 WAV、原始日志与 JSON。检查时所有编译输入 Swift 源的 mtime 均早于生成的二进制。
+持久证据：`$AURALIS_CACHE/reports/ios-tts-current-runtime/`，包括当前 `bundle/current-tts` 可执行文件、完整编译命令、生产源码快照/hash、harness、参考/输出 WAV、原始日志与 JSON。检查时所有编译输入 Swift 源的 mtime 均早于生成的二进制。
 
 ## 真实结果
 

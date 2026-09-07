@@ -1,9 +1,9 @@
 # Central verification integration
 
-Root owns manifest/schema/fetch/validate, iOS ASR and Pipeline, UI source choice.
-Current metadata: `../runtime-cache.json`.
+Manifest/schema/fetch/validate, iOS ASR, Pipeline, and UI source choice.
+Metadata: `../runtime-cache.json` (local; unpublished trees under `$AURALIS_CACHE`).
 
-ASR restored and hash checked under `/Users/arietids/Library/Caches/Auralis/models/asr`.
+ASR hash-checked under `$AURALIS_CACHE/models/asr`.
 Original 15 test WAVs/transcripts under `asr/test_wavs`, Python `asr/venv/bin/python`.
 No implicit `/private/tmp` fallback. Model import from release TAR is now reproducible via `source.archive`.
 
@@ -13,6 +13,6 @@ Central runner gate: `--suite PATH` (schemaVersion=1, name, purpose=smoke|benchm
 `--runner-python asr=...` / `tts=...`; `--mt-library PATH`; `--json-report PATH` persists all fresh invocation logs/reports.
 Missing limits => quality blocked. Hash bad or actual input layout incomplete => no native execution. ASR=6 files/TTS=35 fixed current protocol. ASR full15 newly ran; all recorded. New native task tests use explicit boundary stubs only.
 
-iOS current full-source Catalyst typecheck is being rerun with real ORT Clang headers plus two native module maps; original generic ShapeStyle .appColor errors fixed to Color.appColor. Xcode native build graph now owned by native Codex Astra ios_native_build agent.
+iOS full-source Catalyst typecheck uses the real ORT Clang headers and two native module maps. `ShapeStyle .appColor` was corrected to `Color.appColor`.
 
 MT 已经由 fetch 从原始输入真执行转换后安装到cache/models/mt。shared mt.json source.transform保留原始93e025...，files固定派生e429...，runtimeRevision固定1e411...；Android HY_MT_GGUF常量已同步stq43文件名。schema/fixtures Python+Swift/Kotlin规则同步，Gradle需最终重跑。

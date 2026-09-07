@@ -10,7 +10,7 @@
 
 Auralis 是原生 Android / iOS 应用，在设备上完成 **ASR → MT → TTS**，不把音频或文本送到网络服务。声音克隆只用你提供的参考录音，没有云端声纹库。
 
-开发者预览包含原生客户端、源码构建与主机/模拟器工程验证。模型包仍处于 draft，质量和实体设备验收继续进行。
+Developer Preview：原生客户端、源码构建、主机/模拟器检查。模型包保持 `draft`，质量和真机验证尚未完成。
 
 ## 本预览已有内容
 
@@ -26,26 +26,26 @@ Auralis 是原生 Android / iOS 应用，在设备上完成 **ASR → MT → TTS
 | 项目 | 状态 |
 |---|---|
 | 共享 ASR/MT/TTS manifest | 仍为 **`draft`**。draft 包不能当作 App 已就绪。 |
-| 实体手机 | 本次未提供。模拟器/主机数字不是设备上限。 |
-| 完整 Xcode / iOS 真机链接 | 需要完整 Xcode 与 iOS SDK。缺工具记 **blocked**，不是通过。 |
-| 代表性质量、能耗、热、p95 | 待验证。 |
+| 实体手机 | 本次未提供。主机/模拟器数字只是工程检查。 |
+| CI | Run `34114668822` 已产出三切片 native、未签名 iOS device link 和 simulator app。仍失败：Swift 测试缺 import / SwiftPM core，以及 Android Aliyun 502（修复中）。不是整条绿；计数和 job URL 后补。 |
+| 质量、能耗、热、p95 | 未完成。 |
 | TTS 整数量化 / 仅 CP 的 BF16 | 未通过既定音色门，默认保留 FP32。 |
 | 已测试的 CoreML code predictor | 比 CPU 更慢，并有数值差异，未进入默认配置。 |
 | TTS API2（统一 talker、ICL encoder、流式 vocoder） | 已作为默认 draft 清单；主机与模拟器工程检查，保留 API1 兼容。 |
 | GPU / Hy-MT2 路线图 | 待完成。[原路线图](docs/viaim-parity-refactor-plan.md)保留；本预览不代表一期目标达成。 |
 
-模型权重单独获取。TTS API2 从官方 checkpoint 构建后，通过 `fetch_model.py --local-source` 导入；清单不会为派生 ONNX 图伪造上游下载地址。
+模型权重单独获取。TTS API2 从官方 checkpoint 构建后，用 `fetch_model.py --package tts --dest DEST --local-source LOCAL_SOURCE` 导入；清单不会为派生 ONNX 图伪造上游下载地址。
 
 ## 应用就绪
 
-应用不会假装模型已装好。一个包可用需要：
+一个包可用需要：
 
 1. Manifest `status` 为 `verified`（当前三个都是 `draft`）。
 2. 列出的每个文件都在，且 `sizeBytes`、`sha256` 相符。
 3. 运行时角色能指到这些文件。
 4. 真实 smoke/任务检查已经跑过。
 
-缺文件时显示仍需安装的体积。没有“下载完成”的假状态。
+缺文件时显示仍需安装的体积。
 
 ## 检查（不需要权重）
 
@@ -63,12 +63,27 @@ export AURALIS_CACHE="${AURALIS_CACHE:-$HOME/Library/Caches/Auralis}"   # macOS 
 # Linux/Android 主机一般用 $HOME/.cache/Auralis
 
 python3 convert/manifest_contract.py check
-python3 convert/fetch_model.py --package asr   # 只取 manifest 列出的文件
+# 要用 $AURALIS_CACHE 必须显式 --dest；默认是 <repo>/models
+python3 convert/fetch_model.py --package asr --dest "$AURALIS_CACHE/models"
 python3 convert/validate_models.py --models-dir "$AURALIS_CACHE/models" --suite SUITE.json
 scripts/verify --scope models --models-dir "$AURALIS_CACHE/models" --suite SUITE.json
 ```
 
-`validate_models.py` 在 draft manifest 或空目录上不会以 0 退出。
+`validate_models.py` 在 draft manifest 或空目录上非 0 退出。`--suite` 可选；`--scope models` 必须带 `--models-dir`。
+
+官方 ASR 测试 WAV、声音参考录音和捕获的张量**不在** git。本地备齐后：
+
+```bash
+python3 scripts/prepare_android_test_assets --samples-dir /path/to/samples
+```
+
+可选的 code-predictor 捕获张量：
+
+```bash
+python3 scripts/prepare_android_test_assets --samples-dir /path/to/samples --cp-inputs-dir /path/to/bf16_cp_inputs
+```
+
+报告里的 `$AURALIS_CACHE/...` 是未入库的本地证据。
 
 ## 构建
 
@@ -76,7 +91,7 @@ scripts/verify --scope models --models-dir "$AURALIS_CACHE/models" --suite SUITE
 
 ```bash
 python3 scripts/build_android_native --ndk "$ANDROID_NDK_HOME"
-cd android && ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
+( cd android && ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:lintDebug )
 ```
 
 **iOS** — 完整 Xcode、iPhoneOS 与 iPhoneSimulator SDK。主机/Catalyst 类型检查不等于 iOS 链接。见 [iOS 原生构建](docs/ios-native-build.md)。
@@ -86,7 +101,7 @@ python3 scripts/build_ios_native
 python3 scripts/verify --scope ios
 ```
 
-原生检出与产物缓存：`$AURALIS_CACHE`（默认同上）。不要把该目录提交进 git。
+原生检出与产物在 `$AURALIS_CACHE`。
 
 ## TTS API2（实验）
 
@@ -111,6 +126,6 @@ docs/       构建说明、规格、报告
 
 ## 许可
 
-应用代码：MIT。模型：各自上游许可。第三方 notice 随发布资产提供（由发布者补全）。
+应用代码：MIT。模型：各自上游许可。第三方 notice：[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。
 
-仓库：[ArietidsZ/auralis](https://github.com/ArietidsZ/auralis)。发布说明：[v0.1.0-preview.1](docs/releases/v0.1.0-preview.1.md)。
+仓库：[ArietidsZ/auralis](https://github.com/ArietidsZ/auralis)。预定 tag 页：[v0.1.0-preview.1](https://github.com/ArietidsZ/auralis/releases/tag/v0.1.0-preview.1)。说明：[docs/releases/v0.1.0-preview.1.md](docs/releases/v0.1.0-preview.1.md)。

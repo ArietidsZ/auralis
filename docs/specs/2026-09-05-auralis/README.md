@@ -2,7 +2,7 @@
 
 日期：2026-09-05。状态：设计冻结，可实施。范围：Android、iOS、模型工具、共享数据、验证。
 
-2026-09-07 接续状态见 [当前集成报告](reports/integration-2026-09-07.md)。[首轮交付报告](reports/final-report.md) 保留为历史。真实 ASR/MT/TTS 已执行，API2、流式播放和来源记录正在集成；实体设备产品门仍未完成。
+2026-09-07 状态见 [集成报告](reports/integration-2026-09-07.md)。[首轮交付报告](reports/final-report.md) 为历史。真实 ASR/MT/TTS 已在主机/模拟器执行；TTS API2 与流式路径有工程证据。实体设备产品门未完成。GPU / Hy-MT2 一期目标见 [viaim 路线图](../../viaim-parity-refactor-plan.md)，本预览未实现。
 
 ## 目标与验收边界
 

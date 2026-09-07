@@ -1,6 +1,6 @@
 # continuation-mt-review — 2026-09-07 (post-review fixes)
 
-Independent of lane-A. Artifacts under `/Users/arietids/Library/Caches/Auralis/mt`.
+Independent of lane-A. Artifacts under `$AURALIS_CACHE/mt`.
 CLI contract: `reports/interface-mt-review.md`. Device/Gradle not run.
 
 ## Fixes this round

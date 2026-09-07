@@ -655,6 +655,12 @@ class PipelineOrchestrator(
             } catch (error: Exception) {
                 markFailedTurn(job, "playback_failed", WorkStage.PLAYBACK, error.cause?.message ?: error.message ?: "播放失败")
             }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            // Capture the stage before finally clears it. Otherwise failures
+            // such as a TTS allocation error are incorrectly labeled ASR.
+            markFailedTurn(job, "worker_unexpected", activeStageOrAsr(), error.message ?: "推理管线异常")
         } finally {
             setWorkerStage(null)
         }

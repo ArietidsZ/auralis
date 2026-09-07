@@ -33,7 +33,7 @@ speaker encoder、vocoder、全部 NPY、tokenizer 均为原 FP32 包。没有�
 
 新增脚本：`convert/bench_tts_stage_quant.py`。
 
-全部结果在 `/Users/arietids/Library/Caches/Auralis/tts/stage-quant/`：
+全部结果在 `$AURALIS_CACHE/tts/stage-quant/`：
 
 - `plan.json`：运行前固定的三组组合、基线/criteria 哈希和 ASR 门。
 - `A|B|C/model/`：与原包分离的 hardlink 组合目录，不复制或改写大权重。

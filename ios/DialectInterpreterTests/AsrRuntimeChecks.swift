@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(DialectInterpreter)
+@testable import DialectInterpreter
+#endif
 
 /// Explicit host integration checks over the actual Swift engine + sherpa C
 /// API. Invoked by scripts/check_asr_swift; never runs during light unit tests.

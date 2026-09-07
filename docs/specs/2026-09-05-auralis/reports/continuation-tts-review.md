@@ -1,6 +1,6 @@
 # TTS 独立复核报告（continuation-tts-review）
 
-2026-09-07，TTS 独立复核者（max）。范围：Qwen3-TTS-12Hz-0.6B-Base ONNX bundle 的协议、host 工程、质量代理与性能消融的独立验证。环境曾在 /private/tmp 丢失，全部产物已恢复至持久缓存 `/Users/arietids/Library/Caches/Auralis/`（tts/ ios/ asr/ mt/），恢复脚本与哈希核对见下。
+2026-09-07，TTS 独立复核者（max）。范围：Qwen3-TTS-12Hz-0.6B-Base ONNX bundle 的协议、host 工程、质量代理与性能消融的独立验证。环境曾在 /private/tmp 丢失，全部产物已恢复至持久缓存 `$AURALIS_CACHE/`（tts/ ios/ asr/ mt/），恢复脚本与哈希核对见下。
 
 ## 0. 结论（先读）
 
@@ -13,9 +13,9 @@
 
 ## 1. 恢复与来源（全部可复核）
 
-- **TTS bundle**：HF `elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX` @ `6a297d9641354ef0c16e63d329a93a6239bca0a2`（HF API sha 确认），37 文件 5.92 GB 重下至 `/Users/arietids/Library/Caches/Auralis/tts/hf`；35 个清单文件 **逐一 sha256+size 与 shared/model-manifests/tts.json 匹配（35/35）**；prefill/decode .data 硬链接（manifest 同哈希 4d8e742a…）。
+- **TTS bundle**：HF `elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX` @ `6a297d9641354ef0c16e63d329a93a6239bca0a2`（HF API sha 确认），37 文件 5.92 GB 重下至 `$AURALIS_CACHE/tts/hf`；35 个清单文件 **逐一 sha256+size 与 shared/model-manifests/tts.json 匹配（35/35）**；prefill/decode .data 硬链接（manifest 同哈希 4d8e742a…）。
 - **上游权威参考**：`Qwen/Qwen3-TTS-12Hz-0.6B-Base` @ `5d83992436eae1d760afd27aff78a71d676296fc`（本地缓存复制到 `tts/upstream-qwen`）。
-- **ORT 1.24.2**（`/Users/arietids/Library/Caches/Auralis/ios/`，见其 README.md）：pod archive sha256 `f7100a99…` = 官方 Package.swift 校验和；ObjC 源 = git tag 1.24.2（`b7fb7f7d…`）；9 个非训练 .mm 以 `clang -x objective-c++ -std=c++17 -fobjc-arc -DSPM_BUILD` 编译（含 assert_arc_enabled.o 证明 ARC 开启）；public headers 模块 `ort-headers/` 供主审全源 typecheck 复用（`-I …/ios/ort-headers`）。
+- **ORT 1.24.2**（`$AURALIS_CACHE/ios/`，见其 README.md）：pod archive sha256 `f7100a99…` = 官方 Package.swift 校验和；ObjC 源 = git tag 1.24.2（`b7fb7f7d…`）；9 个非训练 .mm 以 `clang -x objective-c++ -std=c++17 -fobjc-arc -DSPM_BUILD` 编译（含 assert_arc_enabled.o 证明 ARC 开启）；public headers 模块 `ort-headers/` 供主审全源 typecheck 复用（`-I …/ios/ort-headers`）。
 - **Python venv**：Python 3.12，onnxruntime 1.29.0、numpy 2.5.3、tokenizers 0.23.2、soundfile 0.14.0、transformers 5.16.1（清华镜像，files.pythonhosted 不可达）。
 - 参考声音为 macOS `say` 重新生成（Tingting zh_CN 24 kHz、Samantha en_US 24 kHz；与丢失前同引擎同格式，文本为本轮固定文本）。
 
@@ -101,6 +101,6 @@
 ## 7. 产物索引
 
 - 复核脚本：`tts/eval/verify_protocol.py`、`python_cases.py`、`speaker_verify.py`；判定 JSON 同目录。
-- ORT 恢复与复用路径：`/Users/arietids/Library/Caches/Auralis/ios/README.md`（主审 typecheck 用 `…/ios/ort-headers`）。
+- ORT 恢复与复用路径：`$AURALIS_CACHE/ios/README.md`（主审 typecheck 用 `…/ios/ort-headers`）。
 - Swift host harness：`tts/ios-host/`（bundle 结构 + models-root 注入示例）。
 - 接口变更清单：`reports/interface-tts-review.md`。

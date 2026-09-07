@@ -54,6 +54,9 @@ class CheckResult:
 class Reporter:
     def __init__(self) -> None:
         self.results: list[CheckResult] = []
+        # check_id -> (stdout, stderr) of failed/timeout commands, flushed to
+        # the --output evidence directory by write_json.
+        self._raw_output: dict[str, tuple[str, str]] = {}
 
     def add(self, result: CheckResult) -> CheckResult:
         self.results.append(result)
@@ -83,7 +86,14 @@ class Reporter:
             return self.add(CheckResult(
                 check_id, "blocked", f"executable not found: {exc}; {blocked_hint}".strip(),
                 command_str, int((time.monotonic() - start) * 1000)))
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired as exc:
+            stdout = (exc.stdout or b"")
+            if isinstance(stdout, bytes):
+                stdout = stdout.decode("utf-8", "replace")
+            stderr = (exc.stderr or b"")
+            if isinstance(stderr, bytes):
+                stderr = stderr.decode("utf-8", "replace")
+            self._raw_output[check_id] = (stdout, stderr)
             return self.add(CheckResult(
                 check_id, "fail", f"timed out after {timeout}s", command_str,
                 int((time.monotonic() - start) * 1000)))
@@ -101,6 +111,10 @@ class Reporter:
         # can use those same numeric codes for ordinary build failures.
         details = ({"exitCode": proc.returncode}
                    if contract_errors and proc.returncode in (EXIT_CONTRACT, EXIT_ARGS) else {})
+        if status != "pass":
+            # Keep the full, untruncated streams so write_json can emit them
+            # as evidence files; the inline reason stays a bounded summary.
+            self._raw_output[check_id] = (proc.stdout or "", proc.stderr or "")
         return self.add(CheckResult(check_id, status, reason, command_str, duration, details))
 
     def aggregate_exit(self) -> int:
@@ -134,6 +148,22 @@ class Reporter:
 
     def write_json(self, output_dir: Path, mode: str) -> Path:
         output_dir.mkdir(parents=True, exist_ok=True)
+        # Emit full stdout/stderr for every failed check as evidence files so
+        # bounded inline reasons never hide the real compiler error again.
+        for result in self.results:
+            raw = self._raw_output.get(result.id)
+            if raw is None:
+                continue
+            logs_dir = output_dir / "logs"
+            logs_dir.mkdir(parents=True, exist_ok=True)
+            log_path = logs_dir / f"{result.id}.log"
+            stdout, stderr = raw
+            body = f"# check: {result.id}\n# status: {result.status}\n# command: {result.command}\n\n"
+            body += stdout or ""
+            if stderr:
+                body += ("\n--- stderr ---\n" if stdout else "") + stderr
+            log_path.write_text(body, encoding="utf-8")
+            result.details.setdefault("logFile", str(log_path.relative_to(output_dir)))
         path = output_dir / f"verify-{mode}-{int(time.time())}.json"
         payload = {
             "mode": mode,
@@ -152,12 +182,24 @@ def _rank(exit_code: int) -> int:
 
 
 def _tail(stdout: str, stderr: str, limit: int = 1200) -> str:
+    """Bounded summary that never lets one stream evict the other.
+
+    swift build emits progress/errors on stdout and tool warnings on stderr;
+    concatenating stderr after stdout (or vice versa) and keeping a single
+    tail previously hid real failures behind a block of manifest warnings.
+    Each stream gets its own bounded tail; write_json emits the full text.
+    """
+    per_stream = max(1, limit // 2)
+    parts: list[str] = []
     text = (stdout or "").strip()
+    if text:
+        parts.append(text if len(text) <= per_stream else "…" + text[-per_stream:])
     err = (stderr or "").strip()
-    combined = (text + ("\n" + err if err else "")).strip()
-    if len(combined) > limit:
-        combined = "…" + combined[-limit:]
-    return combined or f"exit non-zero"
+    if err:
+        err = err if len(err) <= per_stream else "…" + err[-per_stream:]
+        parts.append("--- stderr ---\n" + err)
+    combined = "\n".join(parts).strip()
+    return combined or "exit non-zero"
 
 
 # ---------------------------------------------------------------------------

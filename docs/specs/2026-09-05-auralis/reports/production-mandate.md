@@ -10,4 +10,4 @@
 
 先完成真实推理与可复现构建，然后逐项消融：默认上游实现、量化精度、线程数、分段/流式策略、不同EP和共享runtime。仅保留有正确性或实测收益的复杂度。完整设备指标缺数据时继续标未验证。
 
-固定产物缓存：/Users/arietids/Library/Caches/Auralis（临时目录在暂停期间已被清理，已按固定哈希恢复）；NDK r27d 已在实际SDK目录安装并运行clang，官方dmg SHA1已验证。本机RAM32GiB，无已连接Android设备。
+固定产物缓存：$AURALIS_CACHE（临时目录在暂停期间已被清理，已按固定哈希恢复）；NDK r27d 已在实际SDK目录安装并运行clang，官方dmg SHA1已验证。本机RAM32GiB，无已连接Android设备。

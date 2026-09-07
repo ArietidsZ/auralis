@@ -1,5 +1,7 @@
 # Auralis → Viaim 功能平齐重构方案
 
+> **v0.1.0-preview.1 未完成下文一期目标。** 当前预览是 CPU 上的 Hy-MT1.5 STQ 与 Qwen3 栈，不是 Hy-MT2 2bit+GPU 发版。本文保留为后续路线。
+
 - 日期：2026-08-25（**v3.4 · MT 一期 2bit+GPU**）
 - 目标分支代码：`baseline/auralis-android-overhaul`
 - 对标：Viaim / iFLYBUDS Pro 3（A09-1）+ Timekettle/讯飞翻译耳机「面对面双向」

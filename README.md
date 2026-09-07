@@ -10,7 +10,7 @@
 
 Auralis is a native Android and iOS app that runs **ASR → MT → TTS** entirely on-device. It does not send audio or text to a network service. Voice cloning uses a recorded reference you provide, not a cloud profile.
 
-This developer preview includes native clients, source builds, and host/emulator engineering checks. Model packages remain gated while quality and physical-device validation continue.
+Developer Preview: native clients, source builds, and host/emulator checks. Model packages stay `draft` until quality and device validation finish.
 
 ## What works in this preview
 
@@ -26,26 +26,26 @@ This developer preview includes native clients, source builds, and host/emulator
 | Item | Status |
 |---|---|
 | Shared ASR/MT/TTS manifests | Still **`draft`**. Draft packages never count as app-ready. |
-| Physical phones | Not provided for this release. Emulator/host numbers are not device limits. |
-| Full Xcode / iOS device link | Requires complete Xcode and iOS SDKs. Missing tools report **blocked**, not pass. |
-| Representative quality, energy, thermal, p95 | Not signed off. |
+| Physical phones | Not in this release. Host/emulator numbers are engineering checks only. |
+| CI | Run `34114668822` produced three-slice native builds, an unsigned iOS device link, and a simulator app. Remaining failures: Swift tests missing import / SwiftPM core, and Android Aliyun 502 (being fixed). Not a green matrix; counts and job URL later. |
+| Quality, energy, thermal, p95 | Open. |
 | TTS integer quantization / CP-only BF16 | Failed the declared voice-quality gates; FP32 remains the default. |
 | Tested CoreML code-predictor configuration | Slower than CPU, with numerical differences; excluded from defaults. |
 | TTS API2 (unified talker, ICL encoder, streaming vocoder) | Default draft manifest; host and emulator engineering checks. API1 remains supported. |
 | GPU / Hy-MT2 roadmap | Pending. See the [earlier roadmap](docs/viaim-parity-refactor-plan.md); this preview does not complete those phase-one targets. |
 
-Model weights are provisioned separately through the pinned manifests. TTS API2 is built from the official checkpoint, then imported with `fetch_model.py --local-source`; it is not a download at a fictional upstream ONNX path.
+Model weights are provisioned separately through the pinned manifests. TTS API2 is built from the official checkpoint, then imported with `fetch_model.py --package tts --dest DEST --local-source LOCAL_SOURCE`; it is not a download at a fictional upstream ONNX path.
 
 ## App readiness
 
-The app will not pretend a model is installed. A package is usable only after:
+A package is usable only after:
 
 1. Manifest `status` is `verified` (currently all three are `draft`).
 2. Every listed file exists with matching `sizeBytes` and `sha256`.
 3. Runtime roles resolve to those files.
 4. A real smoke/task check has run.
 
-Missing files show the size that still needs installing. There is no fake download-complete state.
+Missing files show remaining install size.
 
 ## Checks (no weights required)
 
@@ -63,12 +63,27 @@ export AURALIS_CACHE="${AURALIS_CACHE:-$HOME/Library/Caches/Auralis}"   # macOS 
 # Linux/Android hosts typically use $HOME/.cache/Auralis
 
 python3 convert/manifest_contract.py check
-python3 convert/fetch_model.py --package asr   # only files listed in the manifest
+# --dest is required to use $AURALIS_CACHE; the default is <repo>/models
+python3 convert/fetch_model.py --package asr --dest "$AURALIS_CACHE/models"
 python3 convert/validate_models.py --models-dir "$AURALIS_CACHE/models" --suite SUITE.json
 scripts/verify --scope models --models-dir "$AURALIS_CACHE/models" --suite SUITE.json
 ```
 
-`validate_models.py` will not exit 0 on a draft manifest or an empty directory.
+`validate_models.py` exits non-zero on a draft manifest or empty directory. `--suite` is optional; `--scope models` requires `--models-dir`.
+
+Official ASR test WAVs, voice-reference recordings, and captured tensors are **not** in git. After you have them locally:
+
+```bash
+python3 scripts/prepare_android_test_assets --samples-dir /path/to/samples
+```
+
+Optional captured code-predictor tensors:
+
+```bash
+python3 scripts/prepare_android_test_assets --samples-dir /path/to/samples --cp-inputs-dir /path/to/bf16_cp_inputs
+```
+
+Reports may cite `$AURALIS_CACHE/...` as local evidence; those trees are unpublished.
 
 ## Build
 
@@ -76,7 +91,7 @@ scripts/verify --scope models --models-dir "$AURALIS_CACHE/models" --suite SUITE
 
 ```bash
 python3 scripts/build_android_native --ndk "$ANDROID_NDK_HOME"
-cd android && ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
+( cd android && ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:lintDebug )
 ```
 
 **iOS** — full Xcode, iPhoneOS and iPhoneSimulator SDKs. Host/Catalyst typecheck is not an iOS link. See [iOS native build](docs/ios-native-build.md).
@@ -86,7 +101,7 @@ python3 scripts/build_ios_native
 python3 scripts/verify --scope ios
 ```
 
-Cache for native checkouts and artifacts: `$AURALIS_CACHE` (defaults as above). Do not commit that directory.
+Native checkouts and artifacts live under `$AURALIS_CACHE`.
 
 ## TTS API2 (experimental)
 
@@ -111,6 +126,6 @@ docs/       build notes, specs, reports
 
 ## License
 
-Application code: MIT. Models: their upstream licenses. Third-party notices ship with the release assets (filled in by the publisher).
+Application code: MIT. Models: their upstream licenses. Third-party notices: [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-Repository: [ArietidsZ/auralis](https://github.com/ArietidsZ/auralis). Release notes: [v0.1.0-preview.1](docs/releases/v0.1.0-preview.1.md).
+Repository: [ArietidsZ/auralis](https://github.com/ArietidsZ/auralis). Planned tag page: [v0.1.0-preview.1](https://github.com/ArietidsZ/auralis/releases/tag/v0.1.0-preview.1). Notes: [docs/releases/v0.1.0-preview.1.md](docs/releases/v0.1.0-preview.1.md).

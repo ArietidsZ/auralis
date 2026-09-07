@@ -4,7 +4,7 @@
 
 ## 固定产物
 
-目录：`/Users/arietids/Library/Caches/Auralis/tts/upstream-fidelity/streaming-onnx/`
+目录：`$AURALIS_CACHE/tts/upstream-fidelity/streaming-onnx/`
 
 | 文件 | bytes | SHA-256 |
 |---|---:|---|

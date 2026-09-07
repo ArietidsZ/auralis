@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Apple-Inspired Adaptive Color System
+// MARK: - Auralis colors and native typography
 
 /// Namespace for design tokens and adaptive colors.
 enum AppStyle {
@@ -24,41 +24,37 @@ extension Color {
         )
     }
 
-    // Accent — System Indigo
-    static let appAccent = Color(UIColor { trait in
-        trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.49, green: 0.48, blue: 1.0, alpha: 1)    // #7D7AFF
-            : UIColor(red: 0.345, green: 0.337, blue: 0.839, alpha: 1) // #5856D6
-    })
+    private init(light: UInt, dark: UInt) {
+        self.init(UIColor { trait in
+            let hex = trait.userInterfaceStyle == .dark ? dark : light
+            return UIColor(red: CGFloat((hex >> 16) & 0xFF) / 255,
+                           green: CGFloat((hex >> 8) & 0xFF) / 255,
+                           blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
+        })
+    }
+
+    // Generated from the canonical brand assets, including dark mode.
+    static let appAccent = Color("AccentColor")
 
     // Backgrounds
-    static let appBg = Color(UIColor.systemGroupedBackground)
-    static let appSurface = Color(UIColor.secondarySystemGroupedBackground)
-    static let appSurfaceSecondary = Color(UIColor.tertiarySystemGroupedBackground)
+    static let appBg = Color(light: 0xF6F8F7, dark: 0x0F191D)
+    static let appSurface = Color(light: 0xFFFFFF, dark: 0x142128)
 
     // Text
-    static let appText = Color(UIColor.label)
-    static let appTextSecondary = Color(UIColor.secondaryLabel)
+    static let appText = Color(light: 0x17232A, dark: 0xF6F8F7)
+    static let appTextSecondary = Color(light: 0x5A6B66, dark: 0x9FB3AD)
     static let appTextTertiary = Color(UIColor.tertiaryLabel)
 
     // Chat bubbles
-    static let appBubbleSource = Color(UIColor { trait in
-        trait.userInterfaceStyle == .dark
-            ? UIColor.secondarySystemBackground
-            : UIColor(red: 0.95, green: 0.95, blue: 0.97, alpha: 1)  // #F2F2F7
-    })
-    static let appBubbleTarget = Color(UIColor { trait in
-        trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.49, green: 0.48, blue: 1.0, alpha: 0.12)
-            : UIColor(red: 0.345, green: 0.337, blue: 0.839, alpha: 0.08)
-    })
+    static let appBubbleSource = Color(light: 0xECF1EF, dark: 0x1C2F35)
+    static let appBubbleTarget = Color(light: 0xDCEEE9, dark: 0x17332E)
 
     // Functional (semantic)
-    static let appRecordingRed = Color(hex: 0xFF3B30)
-    static let appAmber = Color(hex: 0xFF9500)
-    static let appGreen = Color(hex: 0x34C759)
-    static let appLiveGreen = Color(hex: 0x30D158)
-    static let appError = Color(hex: 0xFF3B30)
+    static let appRecordingRed = Color(hex: 0xC23A32)
+    static let appAmber = Color(light: 0x8A5A00, dark: 0xE8B45A)
+    static let appGreen = Color(light: 0x1B6E4A, dark: 0x7BD3A8)
+    static let appLiveGreen = appGreen
+    static let appError = Color(light: 0xB3261E, dark: 0xE8907E)
 }
 
 // MARK: - Typography — SF Pro Rounded

@@ -12,7 +12,7 @@
 
 ## 实际检查
 
-持久证据目录：`/Users/arietids/Library/Caches/Auralis/reports/ios-voice-review/`。
+持久证据目录：`$AURALIS_CACHE/reports/ios-voice-review/`。
 
 1. `core-checks` 真实编译并运行，最终 **ALL PASS**，见 `core.log`。声音档案用例覆盖 UUID、保存可见性、持久选择、不信任 audioPath、非 44 字节 WAV 头、截断/错误采样率、非有限数/静音、路径穿越、符号链接、文件系统失败、删除、旧 ID/metadata、PCM16 量化阈值、20 次双实例选择/删除竞争、预先取消保存、拒绝将目录当作音频文件。全部使用专门生成的合成 PCM 和临时目录。
 2. Catalyst 26.5 **全 app Swift 源 typecheck exit 0**，使用真实 ORT headers、Sherpa 和 HyMT module maps，见 `catalyst.log`。仅剩 AudioRecorder/AudioPlayer 原有 allowBluetooth 弃用警告；新增的 actor 隔离告警已解决。

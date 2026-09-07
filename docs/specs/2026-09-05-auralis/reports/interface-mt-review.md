@@ -27,7 +27,7 @@ python3 convert/mt_runner.py \
 Persistent cache (do not use `/private/tmp`):
 
 ```
-/Users/arietids/Library/Caches/Auralis/mt/
+$AURALIS_CACHE/mt/
   llama-stq/                         # git 1e411d8f5a1e23525fa3265dfb4bd76265465397
   models/Hy-MT1.5-1.8B-1.25bit.gguf  # upstream sha256 93e025c9…
   models/Hy-MT1.5-1.8B-1.25bit-stq43.gguf  # remapped e42935e2…

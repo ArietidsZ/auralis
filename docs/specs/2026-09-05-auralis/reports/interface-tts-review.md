@@ -28,8 +28,8 @@
 
 ## 给主审/其它 lane 的依赖与提示
 
-1. **ORT 1.24.2 持久产物**（/private/tmp 丢失后恢复）：`/Users/arietids/Library/Caches/Auralis/ios/`，README.md 有完整表。全源 typecheck 头模块路径：`-I /Users/arietids/Library/Caches/Auralis/ios/ort-headers`（pod archive sha256 与官方 Package.swift 一致；源 tag 1.24.2 = `b7fb7f7d…`）。请勿重复下载。
-2. **TTS bundle 35 文件已恢复并逐哈希核对**：`/Users/arietids/Library/Caches/Auralis/tts/hf`（root 安装的 cache/models/tts 与此同源）。上游 Qwen 参考仓库副本：`tts/upstream-qwen`。
+1. **ORT 1.24.2 持久产物**（/private/tmp 丢失后恢复）：`$AURALIS_CACHE/ios/`，README.md 有完整表。全源 typecheck 头模块路径：`-I $AURALIS_CACHE/ios/ort-headers`（pod archive sha256 与官方 Package.swift 一致；源 tag 1.24.2 = `b7fb7f7d…`）。请勿重复下载。
+2. **TTS bundle 35 文件已恢复并逐哈希核对**：`$AURALIS_CACHE/tts/hf`（root 安装的 cache/models/tts 与此同源）。上游 Qwen 参考仓库副本：`tts/upstream-qwen`。
 3. **manifest tts.json**：删除重复 `runtimeRevision` 键；verification 四项均 `unverified`，notes 写明升级证据要求（样本量/CER 阈值/独立 SV/公开用例）。`convert/manifest_contract.py::load_manifest_v2` 通过。
 4. **中央 model_tasks 对接**：`--language zh` 现在可用；报告含 `language_requested`/`language`；失败 JSON 仍只含错误字段；exit 4 发生在任何重 IO 前。
 5. **Android lane**：TtsEngine.kt vocoder 布局修复 + 2 个新单测需重跑测试与设备验证（转置 bug 在 Android 上同样存在）。

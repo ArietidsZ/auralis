@@ -475,198 +475,186 @@ class TtsApi2Runtime(
             val vocoder = modelManager.loadRoleSession(SUB_DIR, manifest.roles, "vocoder")
             validateVocoderIo(vocoder)
 
-            val state = runPrefill(talker, prefillRows, cfg)
-            val vocState = if (prepared.isIcl) {
-                VocoderTurnState.fromSnapshot(
-                    prepared.vocoderWarmState ?: throw ModelProtocol.UnsupportedModelException(
-                        "ICL prepared reference has no vocoder warm state"))
-            } else {
-                VocoderTurnState.zero()
-            }
-
-            val H = cfg.hiddenSize
-            val random = Random(seed = Qwen3TtsProtocol.SAMPLING_SEED)
-            var logits = state.logits
-            var lastHidden = state.lastHidden
-            var pastKeys = state.pastKeys
-            var pastValues = state.pastValues
-            var pastLen = state.seqLen
-
-            val ttsPad = tables.project(tables.textEmbed(cfg.tts.getValue("tts_pad_token_id")))
-            val trailingRows = trailing.size / H
-            val generated = ArrayList<Int>()
-            val allCodes = ArrayList<IntArray>()
-            val accumulated = ArrayList<FloatArray>()
-
-            var pendingCodes = ArrayList<IntArray>()
-
-            suspend fun vocodeChunk(frames: List<IntArray>) {
-                if (frames.isEmpty()) return
-                val flat = Qwen3TtsProtocol.flattenCodesGroupMajor(frames, Qwen3TtsProtocol.NUM_CODEBOOKS)
-                val waveform = runVocoderChunk(vocoder, vocState, flat, frames.size)
-                accumulated.add(waveform)
-                // Immediate delivery from the generation loop: the sink starts
-                // consuming while later frames still decode. Positive-length
-                // PCM only — method return is the completion signal.
-                onAudioChunk?.invoke(waveform.copyOf())
-            }
-
-            for (step in 0 until maxFrames) {
-                currentCoroutineContext().ensureActive()
-                val g0 = Qwen3TtsProtocol.sampleGroup0(
-                    logits, cfg, Qwen3TtsProtocol.TEMPERATURE, Qwen3TtsProtocol.TOP_K,
-                    Qwen3TtsProtocol.REPETITION_PENALTY,
-                    generated, random, suppressEos = step < 2)
-                if (g0 == cfg.codecEosId) break
-                generated.add(g0)
-
-                val frame = IntArray(Qwen3TtsProtocol.NUM_CODEBOOKS)
-                frame[0] = g0
-                var cpKeys = FloatArray(0)
-                var cpValues = FloatArray(0)
-                var cpPastLen = 0
-                for (g in 1 until Qwen3TtsProtocol.NUM_CODEBOOKS) {
-                    currentCoroutineContext().ensureActive()
-                    val cpInput: FloatArray
-                    val cpInputSeq: Int
-                    if (g == 1) {
-                        // CP prefill: [talker last hidden, group-0 embedding]
-                        cpInput = FloatArray(2 * H)
-                        System.arraycopy(lastHidden, 0, cpInput, 0, H)
-                        System.arraycopy(tables.talkerCodecEmbedding(g0), 0, cpInput, H, H)
-                        cpInputSeq = 2
-                    } else {
-                        cpInput = tables.cpCodecEmbedding(g - 2, frame[g - 1])
-                        cpInputSeq = 1
-                    }
-                    val embedTensor = modelManager.createTensor(
-                        cpInput, longArrayOf(1, cpInputSeq.toLong(), H.toLong()))
-                    val stepsTensor = modelManager.createLongTensor(
-                        longArrayOf((g - 1).toLong()), longArrayOf(1))
-                    val keysTensor = makeKvTensor(cpKeys, cfg.cpLayers, cfg.cpKvHeads, cpPastLen, cfg.cpHeadDim)
-                    val valuesTensor = makeKvTensor(cpValues, cfg.cpLayers, cfg.cpKvHeads, cpPastLen, cfg.cpHeadDim)
-                    try {
-                        cp.run(mapOf(
-                            "inputs_embeds" to embedTensor,
-                            "generation_steps" to stepsTensor,
-                            "past_keys" to keysTensor,
-                            "past_values" to valuesTensor,
-                        )).use { cpResult ->
-                            val cpLogits = readFloatOutput(cpResult, "logits")
-                            val token = Qwen3TtsProtocol.sampleCodePredictor(
-                                cpLogits.copyOfRange(cpLogits.size - cfg.cpVocab, cpLogits.size),
-                                cfg, Qwen3TtsProtocol.TEMPERATURE, Qwen3TtsProtocol.TOP_K, random)
-                            frame[g] = token
-                            val shape = intArrayOf(
-                                cfg.cpLayers, 1, cfg.cpKvHeads, cpPastLen + cpInputSeq, cfg.cpHeadDim)
-                            cpKeys = readKvOutput(cpResult, "present_keys", shape)
-                            cpValues = readKvOutput(cpResult, "present_values", shape)
-                            cpPastLen += cpInputSeq
-                        }
-                    } finally {
-                        embedTensor.close(); stepsTensor.close()
-                        keysTensor.close(); valuesTensor.close()
-                    }
-                }
-                allCodes.add(frame)
-                pendingCodes.add(frame)
-                if (pendingCodes.size == chunkFrames) {
-                    val chunk = pendingCodes
-                    pendingCodes = ArrayList()
-                    vocodeChunk(chunk)
-                }
-
-                // Next talker input: sum of the 16 group embeds + text/pad.
-                val next = FloatArray(H)
-                System.arraycopy(tables.talkerCodecEmbedding(frame[0]), 0, next, 0, H)
-                for (g in 1 until Qwen3TtsProtocol.NUM_CODEBOOKS) {
-                    val cpEmb = tables.cpCodecEmbedding(g - 1, frame[g])
-                    for (j in 0 until H) next[j] += cpEmb[j]
-                }
-                if (step < trailingRows) {
-                    for (j in 0 until H) next[j] += trailing[step * H + j]
+            var state = runPrefill(talker, prefillRows, cfg)
+            try {
+                val vocState = if (prepared.isIcl) {
+                    VocoderTurnState.fromSnapshot(
+                        prepared.vocoderWarmState ?: throw ModelProtocol.UnsupportedModelException(
+                            "ICL prepared reference has no vocoder warm state"))
                 } else {
-                    for (j in 0 until H) next[j] += ttsPad[j]
+                    VocoderTurnState.zero()
                 }
 
-                val totalLen = pastLen + 1
-                val nextTensor = modelManager.createTensor(next, longArrayOf(1, 1, H.toLong()))
-                val maskTensor = modelManager.createLongTensor(
-                    LongArray(totalLen) { 1 }, longArrayOf(1, totalLen.toLong()))
-                val position = (state.seqLen + step).toLong()
-                val posTensor = modelManager.createLongTensor(
-                    longArrayOf(position, position, position), longArrayOf(3, 1, 1))
-                val keysTensor = makeKvTensor(pastKeys, cfg.numLayers, cfg.numKvHeads, pastLen, cfg.headDim)
-                val valuesTensor = makeKvTensor(pastValues, cfg.numLayers, cfg.numKvHeads, pastLen, cfg.headDim)
-                try {
-                    talker.run(mapOf(
-                        "inputs_embeds" to nextTensor,
-                        "attention_mask" to maskTensor,
-                        "position_ids" to posTensor,
-                        "past_keys" to keysTensor,
-                        "past_values" to valuesTensor,
-                    )).use { decResult ->
-                        logits = readFloatOutput(decResult, "logits")
-                        lastHidden = readFloatOutput(decResult, "last_hidden_state")
-                        if (lastHidden.size != H) {
-                            throw ModelProtocol.UnsupportedModelException(
-                                "decode last_hidden_state size ${lastHidden.size} != $H")
+                val H = cfg.hiddenSize
+                val random = Random(seed = Qwen3TtsProtocol.SAMPLING_SEED)
+
+                val ttsPad = tables.project(tables.textEmbed(cfg.tts.getValue("tts_pad_token_id")))
+                val trailingRows = trailing.size / H
+                val generated = ArrayList<Int>()
+                val allCodes = ArrayList<IntArray>()
+                val accumulated = ArrayList<FloatArray>()
+
+                var pendingCodes = ArrayList<IntArray>()
+
+                suspend fun vocodeChunk(frames: List<IntArray>) {
+                    if (frames.isEmpty()) return
+                    val flat = Qwen3TtsProtocol.flattenCodesGroupMajor(frames, Qwen3TtsProtocol.NUM_CODEBOOKS)
+                    val waveform = runVocoderChunk(vocoder, vocState, flat, frames.size)
+                    accumulated.add(waveform)
+                    // Immediate delivery from the generation loop: the sink starts
+                    // consuming while later frames still decode. Positive-length
+                    // PCM only — method return is the completion signal.
+                    onAudioChunk?.invoke(waveform.copyOf())
+                }
+
+                for (step in 0 until maxFrames) {
+                    currentCoroutineContext().ensureActive()
+                    val g0 = Qwen3TtsProtocol.sampleGroup0(
+                        state.logits, cfg, Qwen3TtsProtocol.TEMPERATURE, Qwen3TtsProtocol.TOP_K,
+                        Qwen3TtsProtocol.REPETITION_PENALTY,
+                        generated, random, suppressEos = step < 2)
+                    if (g0 == cfg.codecEosId) break
+                    generated.add(g0)
+
+                    val frame = IntArray(Qwen3TtsProtocol.NUM_CODEBOOKS)
+                    frame[0] = g0
+                    var cpKeys = FloatArray(0)
+                    var cpValues = FloatArray(0)
+                    var cpPastLen = 0
+                    for (g in 1 until Qwen3TtsProtocol.NUM_CODEBOOKS) {
+                        currentCoroutineContext().ensureActive()
+                        val cpInput: FloatArray
+                        val cpInputSeq: Int
+                        if (g == 1) {
+                            // CP prefill: [talker last hidden, group-0 embedding]
+                            cpInput = FloatArray(2 * H)
+                            System.arraycopy(state.lastHidden, 0, cpInput, 0, H)
+                            System.arraycopy(tables.talkerCodecEmbedding(g0), 0, cpInput, H, H)
+                            cpInputSeq = 2
+                        } else {
+                            cpInput = tables.cpCodecEmbedding(g - 2, frame[g - 1])
+                            cpInputSeq = 1
                         }
-                        val kvShape = intArrayOf(cfg.numLayers, 1, cfg.numKvHeads, totalLen, cfg.headDim)
-                        pastKeys = readKvOutput(decResult, "present_keys", kvShape)
-                        pastValues = readKvOutput(decResult, "present_values", kvShape)
-                        pastLen = totalLen
+                        val embedTensor = modelManager.createTensor(
+                            cpInput, longArrayOf(1, cpInputSeq.toLong(), H.toLong()))
+                        val stepsTensor = modelManager.createLongTensor(
+                            longArrayOf((g - 1).toLong()), longArrayOf(1))
+                        val keysTensor = makeKvTensor(cpKeys, cfg.cpLayers, cfg.cpKvHeads, cpPastLen, cfg.cpHeadDim)
+                        val valuesTensor = makeKvTensor(cpValues, cfg.cpLayers, cfg.cpKvHeads, cpPastLen, cfg.cpHeadDim)
+                        try {
+                            cp.run(mapOf(
+                                "inputs_embeds" to embedTensor,
+                                "generation_steps" to stepsTensor,
+                                "past_keys" to keysTensor,
+                                "past_values" to valuesTensor,
+                            )).use { cpResult ->
+                                val cpLogits = readFloatOutput(cpResult, "logits")
+                                val token = Qwen3TtsProtocol.sampleCodePredictor(
+                                    cpLogits.copyOfRange(cpLogits.size - cfg.cpVocab, cpLogits.size),
+                                    cfg, Qwen3TtsProtocol.TEMPERATURE, Qwen3TtsProtocol.TOP_K, random)
+                                frame[g] = token
+                                val shape = intArrayOf(
+                                    cfg.cpLayers, 1, cfg.cpKvHeads, cpPastLen + cpInputSeq, cfg.cpHeadDim)
+                                cpKeys = readKvOutput(cpResult, "present_keys", shape)
+                                cpValues = readKvOutput(cpResult, "present_values", shape)
+                                cpPastLen += cpInputSeq
+                            }
+                        } finally {
+                            embedTensor.close(); stepsTensor.close()
+                            keysTensor.close(); valuesTensor.close()
+                        }
                     }
-                } finally {
-                    nextTensor.close(); maskTensor.close(); posTensor.close()
-                    keysTensor.close(); valuesTensor.close()
+                    allCodes.add(frame)
+                    pendingCodes.add(frame)
+                    if (pendingCodes.size == chunkFrames) {
+                        val chunk = pendingCodes
+                        pendingCodes = ArrayList()
+                        vocodeChunk(chunk)
+                    }
+
+                    // Next talker input: sum of the 16 group embeds + text/pad.
+                    val next = FloatArray(H)
+                    System.arraycopy(tables.talkerCodecEmbedding(frame[0]), 0, next, 0, H)
+                    for (g in 1 until Qwen3TtsProtocol.NUM_CODEBOOKS) {
+                        val cpEmb = tables.cpCodecEmbedding(g - 1, frame[g])
+                        for (j in 0 until H) next[j] += cpEmb[j]
+                    }
+                    if (step < trailingRows) {
+                        for (j in 0 until H) next[j] += trailing[step * H + j]
+                    } else {
+                        for (j in 0 until H) next[j] += ttsPad[j]
+                    }
+
+                    val totalLen = state.seqLen + 1
+                    val nextTensor = modelManager.createTensor(next, longArrayOf(1, 1, H.toLong()))
+                    val maskTensor = modelManager.createLongTensor(
+                        LongArray(totalLen) { 1 }, longArrayOf(1, totalLen.toLong()))
+                    val position = state.seqLen.toLong()
+                    val posTensor = modelManager.createLongTensor(
+                        longArrayOf(position, position, position), longArrayOf(3, 1, 1))
+                    try {
+                        val nextState = readTalkerState(talker.run(mapOf(
+                            "inputs_embeds" to nextTensor,
+                            "attention_mask" to maskTensor,
+                            "position_ids" to posTensor,
+                            "past_keys" to state.pastKeys,
+                            "past_values" to state.pastValues,
+                        )), totalLen, cfg)
+                        val previous = state
+                        state = nextState
+                        previous.close()
+                    } finally {
+                        nextTensor.close(); maskTensor.close(); posTensor.close()
+                    }
                 }
-            }
 
-            if (allCodes.size >= maxFrames) {
-                throw ModelProtocol.UnsupportedModelException(
-                    "TTS frame budget exhausted before codec EOS ($maxFrames)")
-            }
-            if (allCodes.isEmpty()) {
-                throw ModelProtocol.UnsupportedModelException(
-                    "talker produced no audio frames (immediate codec EOS); " +
-                        "synthesis failed rather than emitting silence")
-            }
+                if (allCodes.size >= maxFrames) {
+                    throw ModelProtocol.UnsupportedModelException(
+                        "TTS frame budget exhausted before codec EOS ($maxFrames)")
+                }
+                if (allCodes.isEmpty()) {
+                    throw ModelProtocol.UnsupportedModelException(
+                        "talker produced no audio frames (immediate codec EOS); " +
+                            "synthesis failed rather than emitting silence")
+                }
 
-            // Positive tail chunk at EOS; a boundary EOS has an empty tail and
-            // delivers nothing — completion is signaled by normal return.
-            val tail = pendingCodes
-            pendingCodes = ArrayList()
-            vocodeChunk(tail)
+                // Positive tail chunk at EOS; a boundary EOS has an empty tail and
+                // delivers nothing — completion is signaled by normal return.
+                val tail = pendingCodes
+                pendingCodes = ArrayList()
+                vocodeChunk(tail)
 
-            var total = 0
-            for (chunk in accumulated) total += chunk.size
-            val waveform = FloatArray(total)
-            var offset = 0
-            for (chunk in accumulated) {
-                System.arraycopy(chunk, 0, waveform, offset, chunk.size)
-                offset += chunk.size
-            }
-            val expectedSamples = allCodes.size * Qwen3TtsProtocol.SAMPLES_PER_FRAME
-            if (waveform.size != expectedSamples) {
-                throw ModelProtocol.UnsupportedModelException(
-                    "vocoder produced ${waveform.size} samples, expected $expectedSamples")
-            }
-            if (waveform.isEmpty()) {
-                throw ModelProtocol.UnsupportedModelException("vocoder produced zero samples")
-            }
-            val peak = waveform.maxOf { kotlin.math.abs(it) }
-            if (peak < 1e-4f) {
-                throw ModelProtocol.UnsupportedModelException(
-                    "synthesis is silent (peak $peak); refusing to report success")
-            }
+                var total = 0
+                for (chunk in accumulated) total += chunk.size
+                val waveform = FloatArray(total)
+                var offset = 0
+                for (chunk in accumulated) {
+                    System.arraycopy(chunk, 0, waveform, offset, chunk.size)
+                    offset += chunk.size
+                }
+                val expectedSamples = allCodes.size * Qwen3TtsProtocol.SAMPLES_PER_FRAME
+                if (waveform.size != expectedSamples) {
+                    throw ModelProtocol.UnsupportedModelException(
+                        "vocoder produced ${waveform.size} samples, expected $expectedSamples")
+                }
+                if (waveform.isEmpty()) {
+                    throw ModelProtocol.UnsupportedModelException("vocoder produced zero samples")
+                }
+                val peak = waveform.maxOf { kotlin.math.abs(it) }
+                if (peak < 1e-4f) {
+                    throw ModelProtocol.UnsupportedModelException(
+                        "synthesis is silent (peak $peak); refusing to report success")
+                }
 
-            TtsEngine.SynthesisResult(
-                audioData = waveform,
-                sampleRate = TtsEngine.OUTPUT_SAMPLE_RATE,
-                durationMs = waveform.size.toLong() * 1000 / TtsEngine.OUTPUT_SAMPLE_RATE,
-                inferenceTimeMs = System.currentTimeMillis() - t0
-            )
+                TtsEngine.SynthesisResult(
+                    audioData = waveform,
+                    sampleRate = TtsEngine.OUTPUT_SAMPLE_RATE,
+                    durationMs = waveform.size.toLong() * 1000 / TtsEngine.OUTPUT_SAMPLE_RATE,
+                    inferenceTimeMs = System.currentTimeMillis() - t0
+                )
+            } finally {
+                state.close()
+            }
         }
     }
 
@@ -795,13 +783,45 @@ class TtsApi2Runtime(
 
     // ---- Shared graph plumbing ------------------------------------------------
 
-    private class PrefillState(
+    /**
+     * Owns the talker outputs until the next run has consumed them. KV stays in
+     * ORT memory: getFloatBuffer() would copy each cache onto the ART heap.
+     */
+    private class TalkerState(
         val logits: FloatArray,
         val lastHidden: FloatArray,
-        val pastKeys: FloatArray,
-        val pastValues: FloatArray,
+        val pastKeys: OnnxTensor,
+        val pastValues: OnnxTensor,
         val seqLen: Int,
-    )
+        private val result: OrtSession.Result,
+    ) : AutoCloseable {
+        override fun close() = result.close()
+    }
+
+    /** Takes ownership of [result], including when output validation fails. */
+    private fun readTalkerState(
+        result: OrtSession.Result, seqLen: Int, cfg: Qwen3TtsBundleConfig,
+    ): TalkerState {
+        try {
+            val logits = readFloatOutput(result, "logits")
+            if (logits.size != cfg.talkerVocab) {
+                throw ModelProtocol.UnsupportedModelException(
+                    "talker logits size ${logits.size} != vocab ${cfg.talkerVocab}")
+            }
+            val lastHidden = readFloatOutput(result, "last_hidden_state")
+            if (lastHidden.size != cfg.hiddenSize) {
+                throw ModelProtocol.UnsupportedModelException(
+                    "talker last_hidden_state size ${lastHidden.size} != ${cfg.hiddenSize}")
+            }
+            val shape = intArrayOf(cfg.numLayers, 1, cfg.numKvHeads, seqLen, cfg.headDim)
+            val keys = kvOutputTensor(result, "present_keys", shape)
+            val values = kvOutputTensor(result, "present_values", shape)
+            return TalkerState(logits, lastHidden, keys, values, seqLen, result)
+        } catch (error: Throwable) {
+            result.close()
+            throw error
+        }
+    }
 
     private fun makeKvTensor(
         data: FloatArray, layers: Int, kvHeads: Int, seqLen: Int, headDim: Int,
@@ -809,7 +829,7 @@ class TtsApi2Runtime(
         data, longArrayOf(layers.toLong(), 1, kvHeads.toLong(), seqLen.toLong(), headDim.toLong()))
 
     /** Dynamic prefill on the unified talker: P=0 empty past, stacked KV output. */
-    private fun runPrefill(talker: OrtSession, embeds: FloatArray, cfg: Qwen3TtsBundleConfig): PrefillState {
+    private fun runPrefill(talker: OrtSession, embeds: FloatArray, cfg: Qwen3TtsBundleConfig): TalkerState {
         val seqLen = embeds.size / cfg.hiddenSize
         if (seqLen <= 0) {
             throw ModelProtocol.UnsupportedModelException("prefill embeds are empty")
@@ -824,28 +844,13 @@ class TtsApi2Runtime(
         val emptyKeys = makeKvTensor(FloatArray(0), cfg.numLayers, cfg.numKvHeads, 0, cfg.headDim)
         val emptyValues = makeKvTensor(FloatArray(0), cfg.numLayers, cfg.numKvHeads, 0, cfg.headDim)
         try {
-            talker.run(mapOf(
+            return readTalkerState(talker.run(mapOf(
                 "inputs_embeds" to embedTensor,
                 "attention_mask" to maskTensor,
                 "position_ids" to posTensor,
                 "past_keys" to emptyKeys,
                 "past_values" to emptyValues,
-            )).use { result ->
-                val logits = readFloatOutput(result, "logits")
-                if (logits.size != cfg.talkerVocab) {
-                    throw ModelProtocol.UnsupportedModelException(
-                        "prefill logits size ${logits.size} != vocab ${cfg.talkerVocab}")
-                }
-                val lastHidden = readFloatOutput(result, "last_hidden_state")
-                if (lastHidden.size != cfg.hiddenSize) {
-                    throw ModelProtocol.UnsupportedModelException(
-                        "prefill last_hidden_state size ${lastHidden.size} != ${cfg.hiddenSize}")
-                }
-                val kvShape = intArrayOf(cfg.numLayers, 1, cfg.numKvHeads, seqLen, cfg.headDim)
-                val keys = readKvOutput(result, "present_keys", kvShape)
-                val values = readKvOutput(result, "present_values", kvShape)
-                return PrefillState(logits, lastHidden, keys, values, seqLen)
-            }
+            )), seqLen, cfg)
         } finally {
             embedTensor.close(); maskTensor.close(); posTensor.close()
             emptyKeys.close(); emptyValues.close()
@@ -868,14 +873,18 @@ class TtsApi2Runtime(
         return values
     }
 
-    private fun readKvOutput(result: OrtSession.Result, name: String, expected: IntArray): FloatArray {
+    private fun kvOutputTensor(result: OrtSession.Result, name: String, expected: IntArray): OnnxTensor {
         val tensor = outputTensor(result, name)
         val shape = tensor.info.shape.map { it.toInt() }.toIntArray()
         if (!shape.contentEquals(expected)) {
             throw ModelProtocol.UnsupportedModelException(
                 "KV tensor '$name' shape ${shape.toList()} != expected ${expected.toList()}")
         }
-        val buf = tensor.floatBuffer
+        return tensor
+    }
+
+    private fun readKvOutput(result: OrtSession.Result, name: String, expected: IntArray): FloatArray {
+        val buf = kvOutputTensor(result, name, expected).floatBuffer
         val values = FloatArray(buf.remaining())
         buf.get(values)
         return values

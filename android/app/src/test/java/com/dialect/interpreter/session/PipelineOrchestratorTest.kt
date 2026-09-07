@@ -2,6 +2,7 @@ package com.dialect.interpreter.session
 
 import com.dialect.interpreter.audio.AudioCapture
 import com.dialect.interpreter.audio.AudioPlayback
+import com.dialect.interpreter.audio.StreamPlaybackResult
 import com.dialect.interpreter.inference.AsrEngine
 import com.dialect.interpreter.inference.PipelineOrchestrator
 import com.dialect.interpreter.inference.RuntimeLimits
@@ -13,6 +14,7 @@ import com.dialect.interpreter.inference.TranslationRequest
 import com.dialect.interpreter.inference.TranslationResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +35,122 @@ import java.util.concurrent.atomic.AtomicBoolean
  * V04, V05, V06, V07-half-duplex). No fake inference is used in production.
  */
 class PipelineOrchestratorTest {
+
+    private class ProgressiveSynth : SpeechSynthesizer {
+        val finish = CompletableDeferred<Unit>()
+        val producing = AtomicBoolean(false)
+        var failAfterFirst = false
+        var failureBeforeOutput: Error? = null
+        var releasedDuringProduction = false
+        override suspend fun load() = Unit
+        override suspend fun synthesize(text: String, language: String, speakerEmbedding: FloatArray?): TtsEngine.SynthesisResult =
+            error("stream test must use the incremental port")
+        override suspend fun synthesizeStream(text: String, language: String, speakerEmbedding: FloatArray?,
+                                              onAudioChunk: suspend (FloatArray) -> Unit): TtsEngine.SynthesisResult {
+            producing.set(true)
+            try {
+                failureBeforeOutput?.let { throw it }
+                onAudioChunk(floatArrayOf(0.1f))
+                finish.await()
+                if (failAfterFirst) error("controlled no EOS after partial PCM")
+                onAudioChunk(floatArrayOf(0.2f))
+                return TtsEngine.SynthesisResult(floatArrayOf(0.1f, 0.2f), 24000, 1, 1)
+            } finally { producing.set(false) }
+        }
+        override fun release() { releasedDuringProduction = producing.get() }
+    }
+
+    private class StreamPlayback : AudioPlayback {
+        private val playing = MutableStateFlow(false)
+        override val isPlaying: StateFlow<Boolean> = playing
+        val firstChunk = CompletableDeferred<Unit>()
+        val sourceReturned = CompletableDeferred<Unit>()
+        val tail = CompletableDeferred<Unit>()
+        var blockSink = false
+        var samples = 0L
+        override suspend fun play(audio: FloatArray, sampleRate: Int) { error("must not replay the complete result") }
+        override suspend fun playStream(sampleRate: Int, producer: suspend (suspend (FloatArray) -> Unit) -> Unit): StreamPlaybackResult {
+            try {
+                producer { chunk ->
+                    playing.value = true
+                    samples += chunk.size
+                    firstChunk.complete(Unit)
+                    if (blockSink) awaitCancellation()
+                }
+                sourceReturned.complete(Unit)
+                tail.await()
+                return StreamPlaybackResult(samples, 0)
+            } finally { playing.value = false }
+        }
+        override fun stop() = Unit
+        override fun release() = Unit
+    }
+
+    @Test fun `stream delivers before synthesis ends and completes only after tail`() = runBlocking<Unit> {
+        val capture = FakeCapture()
+        val synth = ProgressiveSynth()
+        val playback = StreamPlayback()
+        val controller = orchestrator(FakeRecognizer(), FakeTranslator(), synth, capture, playback)
+        try {
+            controller.start(SessionConfig("Chinese", "English", "p1"))
+            commitUtterance(capture)
+            withTimeout(8000) { playback.firstChunk.await() }
+            assertTrue(synth.producing.get())
+            assertTrue(controller.snapshot.value.activeStages.containsAll(setOf(WorkStage.TTS, WorkStage.PLAYBACK)))
+            synth.finish.complete(Unit)
+            withTimeout(8000) { playback.sourceReturned.await() }
+            assertTrue(controller.snapshot.value.turns.none { it.status == TurnStatus.COMPLETE })
+            playback.tail.complete(Unit)
+            awaitSnapshot(controller) { it.turns.any { turn -> turn.status == TurnStatus.COMPLETE } }
+            assertEquals(2L, playback.samples)
+        } finally { controller.stop() }
+    }
+
+    @Test fun `partial synthesis failure keeps translation and never completes`() = runBlocking<Unit> {
+        val capture = FakeCapture()
+        val synth = ProgressiveSynth().apply { failAfterFirst = true; finish.complete(Unit) }
+        val playback = StreamPlayback()
+        val controller = orchestrator(FakeRecognizer(), FakeTranslator(), synth, capture, playback)
+        try {
+            controller.start(SessionConfig("Chinese", "English", "p1"))
+            commitUtterance(capture)
+            val snapshot = awaitSnapshot(controller) { it.turns.any { turn -> turn.status == TurnStatus.FAILED } }
+            val turn = snapshot.turns.last()
+            assertEquals(WorkStage.TTS, turn.problem?.stage)
+            assertEquals("Hello world", turn.translatedText)
+            assertEquals(1L, playback.samples)
+            assertTrue(!playback.isPlaying.value)
+        } finally { controller.stop() }
+    }
+
+    @Test fun `unexpected synthesis allocation error retains its actual stage`() = runBlocking<Unit> {
+        val capture = FakeCapture()
+        val synth = ProgressiveSynth().apply { failureBeforeOutput = OutOfMemoryError("controlled allocation failure") }
+        val controller = orchestrator(FakeRecognizer(), FakeTranslator(), synth, capture, StreamPlayback())
+        try {
+            controller.start(SessionConfig("Chinese", "English", "p1"))
+            commitUtterance(capture)
+            val snapshot = awaitSnapshot(controller) { it.turns.any { turn -> turn.status == TurnStatus.FAILED } }
+            val turn = snapshot.turns.last()
+            assertEquals("worker_unexpected", turn.problem?.code)
+            assertEquals(WorkStage.TTS, turn.problem?.stage)
+            assertEquals("Hello world", turn.translatedText)
+        } finally { controller.stop() }
+    }
+
+    @Test fun `stop joins synthesis suspended in the audio sink`() = runBlocking<Unit> {
+        val capture = FakeCapture()
+        val synth = ProgressiveSynth()
+        val playback = StreamPlayback().apply { blockSink = true }
+        val controller = orchestrator(FakeRecognizer(), FakeTranslator(), synth, capture, playback)
+        controller.start(SessionConfig("Chinese", "English", "p1"))
+        commitUtterance(capture)
+        withTimeout(8000) { playback.firstChunk.await() }
+        withTimeout(2000) { controller.stop() }
+        assertTrue(!synth.producing.get() && !synth.releasedDuringProduction)
+        assertTrue(!playback.isPlaying.value)
+        assertTrue(controller.snapshot.value.turns.none { it.status == TurnStatus.COMPLETE })
+    }
 
     // ---- Fakes ----
 

@@ -56,7 +56,7 @@
 
 ## 候选与复建
 
-目录：`/Users/arietids/Library/Caches/Auralis/tts/unified-talker/`。
+目录：`$AURALIS_CACHE/tts/unified-talker/`。
 
 | 文件 | 字节 | SHA256 |
 |---|---:|---|

@@ -20,7 +20,7 @@ helper 先验证取消、8–192 kHz、非空有限 PCM、最多 30 秒和原生
 
 ## 实际结果
 
-持久目录：`/Users/arietids/Library/Caches/Auralis/reports/ios-tts-resampler/`。
+持久目录：`$AURALIS_CACHE/reports/ios-tts-resampler/`。
 
 1. `scripts/check_tts_resampler_swift` 提取原样生产 helper，真实编译 Swift 并链接官方 `libsherpa-onnx-c-api.dylib` 执行。DSP 没有 stub。库 SHA256 为 `9e26d7ec53650b622adf0e9d4b16863cbc54016e619d89b70213ecec1dc1af91`，完整命令和源码 hash 见 `dsp/provenance.json`。
 2. 16/24/44.1/48 kHz 的 1、2、1001、1 秒、30 秒静音长度全部通过；8 kHz/192 kHz 端点通过。1001 样本首/中/尾冲激峰位分别为 `[0,750,1500]`、`[0,500,1000]`、`[0,272,544]`、`[0,250,500]`。1 kHz 通带幅度比约 0.99993；48→24 kHz 的 18 kHz 正弦衰减 **122.67 dB**。同率逐位相同；非法输入、溢出率比、原生非有限输出、预先取消均按预期拒绝。见 `dsp/checks.json`。

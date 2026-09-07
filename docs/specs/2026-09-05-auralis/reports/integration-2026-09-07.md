@@ -1,8 +1,6 @@
 # 2026-09-07 集成记录（进行中）
 
-23 小时暂停到期于 02:41 UTC 后恢复；保留原 git 索引和三条独占任务。
-临时目录全部丢失，SDK 保留。真实模型与运行环境按来源哈希恢复到
-`/Users/arietids/Library/Caches/Auralis`。路径入口：`../runtime-cache.json`。
+工程续作记录。模型与运行环境按来源哈希放在本地 `$AURALIS_CACHE`（未入库）。路径索引：`../runtime-cache.json`。
 
 ## 已实跑
 

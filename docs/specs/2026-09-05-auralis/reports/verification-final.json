@@ -1,0 +1,132 @@
+{
+  "mode": "full",
+  "exitCode": 2,
+  "counts": {
+    "pass": 12,
+    "fail": 0,
+    "blocked": 3,
+    "skipped": 0
+  },
+  "results": [
+    {
+      "id": "contracts-shared-dir",
+      "status": "pass",
+      "reason": "exit 0",
+      "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 /Users/arietids/Library/CloudStorage/Dropbox/Workspace/Cross Dialect Communication/convert/manifest_contract.py check",
+      "durationMs": 46,
+      "details": {}
+    },
+    {
+      "id": "contracts-fixtures",
+      "status": "pass",
+      "reason": "exit 0",
+      "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 /Users/arietids/Library/CloudStorage/Dropbox/Workspace/Cross Dialect Communication/convert/manifest_contract.py check-fixtures",
+      "durationMs": 45,
+      "details": {}
+    },
+    {
+      "id": "python-compileall",
+      "status": "pass",
+      "reason": "exit 0",
+      "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 -m compileall -q /Users/arietids/Library/CloudStorage/Dropbox/Workspace/Cross Dialect Communication/convert /Users/arietids/Library/CloudStorage/Dropbox/Workspace/Cross Dialect Communication/scripts",
+      "durationMs": 40,
+      "details": {}
+    },
+    {
+      "id": "python-unittest",
+      "status": "pass",
+      "reason": "exit 0",
+      "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 -m unittest discover -s /Users/arietids/Library/CloudStorage/Dropbox/Workspace/Cross Dialect Communication/convert/tests -p test_*.py",
+      "durationMs": 401,
+      "details": {}
+    },
+    {
+      "id": "python-unittest-scripts",
+      "status": "pass",
+      "reason": "exit 0",
+      "command": "/opt/homebrew/opt/python@3.14/bin/python3.14 -m unittest discover -s /Users/arietids/Library/CloudStorage/Dropbox/Workspace/Cross Dialect Communication/scripts/tests -p test_*.py",
+      "durationMs": 102,
+      "details": {}
+    },
+    {
+      "id": "probe-python3",
+      "status": "pass",
+      "reason": "Python 3.14.6",
+      "command": null,
+      "durationMs": 0,
+      "details": {}
+    },
+    {
+      "id": "probe-jdk17",
+      "status": "pass",
+      "reason": "java version \"23\" 2024-09-17",
+      "command": null,
+      "durationMs": 0,
+      "details": {}
+    },
+    {
+      "id": "probe-android-sdk",
+      "status": "pass",
+      "reason": "/opt/homebrew/share/android-commandlinetools",
+      "command": null,
+      "durationMs": 0,
+      "details": {}
+    },
+    {
+      "id": "probe-xcode-full",
+      "status": "blocked",
+      "reason": "Install full Xcode; the current toolchain appears to be CommandLineTools only",
+      "command": null,
+      "durationMs": 0,
+      "details": {}
+    },
+    {
+      "id": "swift-core-build",
+      "status": "pass",
+      "reason": "exit 0",
+      "command": "swift build --product core-checks",
+      "durationMs": 793,
+      "details": {}
+    },
+    {
+      "id": "swift-core-checks",
+      "status": "pass",
+      "reason": "exit 0",
+      "command": "/Users/arietids/Library/CloudStorage/Dropbox/Workspace/Cross Dialect Communication/.build/debug/core-checks",
+      "durationMs": 51,
+      "details": {}
+    },
+    {
+      "id": "session-host-tests",
+      "status": "pass",
+      "reason": "exit 0",
+      "command": "bash /Users/arietids/Library/CloudStorage/Dropbox/Workspace/Cross Dialect Communication/ios/DialectInterpreterTests/SessionCoreTests/run_host_tests.sh",
+      "durationMs": 40500,
+      "details": {}
+    },
+    {
+      "id": "android-gradle",
+      "status": "pass",
+      "reason": "exit 0",
+      "command": "./gradlew :app:testDebugUnitTest :app:assembleDebug :app:lintDebug --console=plain",
+      "durationMs": 620,
+      "details": {}
+    },
+    {
+      "id": "ios-xcodebuild",
+      "status": "blocked",
+      "reason": "full Xcode (iphonesimulator SDK) not available; install Xcode then sudo xcode-select -s /Applications/Xcode.app",
+      "command": "xcodebuild -project ios/DialectInterpreter.xcodeproj -scheme DialectInterpreter -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build",
+      "durationMs": 0,
+      "details": {}
+    },
+    {
+      "id": "models-validate",
+      "status": "blocked",
+      "reason": "models directory not found: /Users/arietids/Library/CloudStorage/Dropbox/Workspace/Cross Dialect Communication/models; pass --models-dir PATH (populated via convert/fetch_model.py)",
+      "command": "python3 convert/validate_models.py --models-dir PATH",
+      "durationMs": 0,
+      "details": {}
+    }
+  ]
+}

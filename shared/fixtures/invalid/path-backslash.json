@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "2",
+  "packageId": "mt",
+  "version": "0.1.0",
+  "status": "draft",
+  "source": {
+    "repoId": "x",
+    "upstreamModelId": "x",
+    "licenseSource": "x"
+  },
+  "runtime": {
+    "backend": "gguf-llama-cpp",
+    "apiContractVersion": "1",
+    "targetPlatforms": [
+      {
+        "platform": "android"
+      }
+    ],
+    "streaming": false
+  },
+  "capabilities": {
+    "modes": [
+      "translate"
+    ],
+    "languages": []
+  },
+  "files": [
+    {
+      "path": "mt\\model.gguf",
+      "classification": "model"
+    }
+  ],
+  "roles": {},
+  "$expectedError": {
+    "code": "path-escape"
+  }
+}

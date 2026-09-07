@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "2",
+  "packageId": "tts",
+  "version": "0.1.0",
+  "status": "draft",
+  "source": {
+    "repoId": "x",
+    "upstreamModelId": "x",
+    "licenseSource": "x"
+  },
+  "runtime": {
+    "backend": "onnx",
+    "apiContractVersion": "1",
+    "targetPlatforms": [
+      {
+        "platform": "android"
+      }
+    ],
+    "streaming": false
+  },
+  "capabilities": {
+    "modes": [
+      "synthesize"
+    ],
+    "languages": []
+  },
+  "files": [
+    {
+      "path": "tts/vocoder.onnx",
+      "classification": "model"
+    }
+  ],
+  "roles": {
+    "vocoder": "tts/vocoder.onnx",
+    "speaker_encoder": "tts/speaker_encoder.onnx"
+  },
+  "$expectedError": {
+    "code": "role-missing"
+  }
+}

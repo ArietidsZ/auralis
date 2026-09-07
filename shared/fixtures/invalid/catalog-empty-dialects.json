@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1",
+  "dialects": [],
+  "targetLanguages": [
+    {
+      "id": "zh",
+      "displayLabel": "中文"
+    }
+  ],
+  "$expectedError": {
+    "code": "empty-file-set"
+  }
+}

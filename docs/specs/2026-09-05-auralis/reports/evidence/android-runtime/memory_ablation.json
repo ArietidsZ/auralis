@@ -1,0 +1,20 @@
+{
+  "device": "emulator-5580 API35 arm64 (emulator, not a phone baseline)",
+  "phases": {
+    "process_baseline_kb": 325500,
+    "after_java_ort_env_kb": 325500,
+    "java_ort_env_cost_kb": 0,
+    "after_sherpa_libs_kb": 325500,
+    "sherpa_libs_cost_kb": 0,
+    "after_asr_model_load_kb": 1356128,
+    "asr_model_load_cost_kb": 1030628,
+    "after_first_decode_kb": 1598788,
+    "after_release_kb": 377468,
+    "rss_retained_after_release_kb": -978660
+  },
+  "design_notes": {
+    "onnx_model_manager_env": "lazy — ASR-only controllers never map the 1.22 AAR",
+    "sherpa_jni": "single idempotent load (SherpaJni), no per-engine re-init",
+    "dual_ort": "libonnxruntime.so (1.22 AAR, Java) + libonnxrtnsher.so (1.27.1, native) coexist; unify-on-1.27.1 rejected — no Maven 1.27.1 coordinate and TTS owns the AAR pin"
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "sherpa_commit": "917bed95c8e5c7c18aa4d69fea42e9ef8ef0a60e",
+  "source_archive_sha256": "acf539e930283442c4237b7b23a06ebe3bff10cbc00694a4f09a3580e3c10e9e",
+  "aar_sha256": "bc461499a735653dff285a6a3477d28b9cfd119a09c7753eaf003426b577f223",
+  "aar_maven_sha1": "345c83b483a3aa4c5d74564ce0a92c7684794c9a",
+  "ndk": "27.3.13750724",
+  "android_api": 28,
+  "aar_min_sdk": 24,
+  "ort_api": 24,
+  "baseline": false,
+  "ort_c_api_header_sha256": "9ed0d7054a4e74249467365b25b415d36f51a44a6349e2a994a1812e4723d1e2",
+  "required_kotlin_jni_methods": 13,
+  "device_execution": "NOT RUN",
+  "jni_cmake_sha256": "d8d8d80099104469a04a1d0f6c1e4dd192182d4367ae5d4a6f4df9d56278a2ce",
+  "files": {
+    "libsherpa-onnx-jni.so": {
+      "path": "/Users/arietids/Library/Caches/Auralis/android-ort-unified/candidate/libsherpa-onnx-jni.so",
+      "sha256": "991e14030ce9e1d6f3ad342d6c383b955463ed46aa6097fe8a2b35a6142776a3",
+      "bytes": 2600088,
+      "needed": [
+        "libandroid.so",
+        "liblog.so",
+        "libonnxruntime.so",
+        "libm.so",
+        "libdl.so",
+        "libc.so"
+      ],
+      "soname": "libsherpa-onnx-jni.so",
+      "native_android_api": 28,
+      "load_alignment": [
+        16384,
+        16384,
+        16384
+      ],
+      "jni_exports": [
+        "Java_com_k2fsa_sherpa_onnx_OfflineRecognizer_createStream",
+        "Java_com_k2fsa_sherpa_onnx_OfflineRecognizer_createStreamWithHotwords",
+        "Java_com_k2fsa_sherpa_onnx_OfflineRecognizer_decode",
+        "Java_com_k2fsa_sherpa_onnx_OfflineRecognizer_decodeStreams",
+        "Java_com_k2fsa_sherpa_onnx_OfflineRecognizer_delete",
+        "Java_com_k2fsa_sherpa_onnx_OfflineRecognizer_getResult",
+        "Java_com_k2fsa_sherpa_onnx_OfflineRecognizer_newFromAsset",
+        "Java_com_k2fsa_sherpa_onnx_OfflineRecognizer_newFromFile",
+        "Java_com_k2fsa_sherpa_onnx_OfflineRecognizer_prependAdspLibraryPath",
+        "Java_com_k2fsa_sherpa_onnx_OfflineRecognizer_setConfig",
+        "Java_com_k2fsa_sherpa_onnx_OfflineStream_acceptWaveform",
+        "Java_com_k2fsa_sherpa_onnx_OfflineStream_delete",
+        "Java_com_k2fsa_sherpa_onnx_OfflineStream_getOption",
+        "Java_com_k2fsa_sherpa_onnx_OfflineStream_hasOption",
+        "Java_com_k2fsa_sherpa_onnx_OfflineStream_setOption"
+      ],
+      "ort_imports": [
+        "OrtGetApiBase@VERS_1.24.2",
+        "OrtSessionOptionsAppendExecutionProvider_Nnapi@VERS_1.24.2"
+      ]
+    },
+    "libonnxruntime.so": {
+      "path": "/Users/arietids/Library/Caches/Auralis/android-ort-unified/ort-1.24.2/jni/arm64-v8a/libonnxruntime.so",
+      "sha256": "42f83b3c2370300821942d1f61099689d37bb5e05126fb75849d4cc9dbe356a2",
+      "bytes": 25770888,
+      "needed": [
+        "libdl.so",
+        "liblog.so",
+        "libandroid.so",
+        "libm.so",
+        "libc.so"
+      ],
+      "soname": "libonnxruntime.so",
+      "native_android_api": 24,
+      "load_alignment": [
+        16384,
+        16384,
+        16384
+      ],
+      "jni_exports": [],
+      "ort_imports": []
+    },
+    "libonnxruntime4j_jni.so": {
+      "path": "/Users/arietids/Library/Caches/Auralis/android-ort-unified/ort-1.24.2/jni/arm64-v8a/libonnxruntime4j_jni.so",
+      "sha256": "64ea10bc6fe15413d9e189d4ac31397b6432620728995a25dd204c54afeba5ea",
+      "bytes": 111976,
+      "needed": [
+        "libonnxruntime.so",
+        "libm.so",
+        "libdl.so",
+        "libc.so"
+      ],
+      "soname": null,
+      "native_android_api": 24,
+      "load_alignment": [
+        16384,
+        16384
+      ],
+      "jni_exports": [],
+      "ort_imports": [
+        "OrtGetApiBase@VERS_1.24.2",
+        "OrtSessionOptionsAppendExecutionProvider_CPU@VERS_1.24.2",
+        "OrtSessionOptionsAppendExecutionProvider_Nnapi@VERS_1.24.2"
+      ]
+    }
+  },
+  "java_api_review": {
+    "compared_from": "1.22.0",
+    "compared_to": "1.24.2",
+    "classes": 9,
+    "removed_public_declarations": 0,
+    "added_public_declarations": 5,
+    "device_execution": false
+  }
+}

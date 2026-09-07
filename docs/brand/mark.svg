@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="108" height="108" role="img" aria-label="Auralis">
+  <rect id="background" width="108" height="108" fill="#142128"/>
+  <g id="mark" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M37 73 L50.8 37.8 Q54 29.7 57.2 37.8 L71 73" stroke="#F6F8F7" stroke-width="6.5"/>
+    <path d="M44 58 L64 58" stroke="#63B3A4" stroke-width="5.2"/>
+    <path d="M29 41 C21.5 49 21.5 62 29 70 M79 41 C86.5 49 86.5 62 79 70" stroke="#63B3A4" stroke-width="4.5"/>
+  </g>
+</svg>

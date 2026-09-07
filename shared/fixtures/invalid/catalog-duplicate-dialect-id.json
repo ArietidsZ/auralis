@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1",
+  "dialects": [
+    {
+      "id": "cantonese",
+      "displayLabel": "粤语",
+      "asrLanguage": "Cantonese"
+    },
+    {
+      "id": "cantonese",
+      "displayLabel": "粤语2",
+      "asrLanguage": "Cantonese"
+    }
+  ],
+  "targetLanguages": [
+    {
+      "id": "zh",
+      "displayLabel": "中文"
+    }
+  ],
+  "$expectedError": {
+    "code": "duplicate-path"
+  }
+}

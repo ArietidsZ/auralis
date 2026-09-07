@@ -1,0 +1,33 @@
+{
+  "restoredAfterTemporaryDirectoryLoss": true,
+  "cacheRoot": "/Users/arietids/Library/Caches/Auralis",
+  "asr": {
+    "status": "installed-draft",
+    "archive": "/Users/arietids/Library/Caches/Auralis/asr/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2",
+    "bundle": "/Users/arietids/Library/Caches/Auralis/models/asr",
+    "modelsRoot": "/Users/arietids/Library/Caches/Auralis/models",
+    "python": "/Users/arietids/Library/Caches/Auralis/asr/venv/bin/python",
+    "samples": "/Users/arietids/Library/Caches/Auralis/asr/test_wavs",
+    "defaultLanguageHint": null,
+    "hintAblation": "/Users/arietids/Library/Caches/Auralis/reports/asr-language-hints.json"
+  },
+  "note": "Current files must be rechecked; old /private/tmp report paths no longer exist.",
+  "mt": {
+    "status": "installed-draft",
+    "bundle": "/Users/arietids/Library/Caches/Auralis/models/mt",
+    "library": "/Users/arietids/Library/Caches/Auralis/mt/build-host/libhymt_core.dylib",
+    "derivedFile": "Hy-MT1.5-1.8B-1.25bit-stq43.gguf",
+    "librarySha256": "5bee2b076400b2842da88fc65b7305ce3514e230f90fc708595f88464e342465",
+    "localFix": "graph-size unsigned address arithmetic; CMake build-local copy"
+  },
+  "tts": {
+    "status": "installed-draft",
+    "bundle": "/Users/arietids/Library/Caches/Auralis/models/tts",
+    "python": "/Users/arietids/Library/Caches/Auralis/tts/venv/bin/python",
+    "ort124Overlay": "/Users/arietids/Library/Caches/Auralis/tts/optimization/ort124",
+    "streamingCandidate": "/Users/arietids/Library/Caches/Auralis/tts/upstream-fidelity/streaming-onnx",
+    "iclCandidate": "/Users/arietids/Library/Caches/Auralis/tts/icl",
+    "unifiedTalkerCandidate": "/Users/arietids/Library/Caches/Auralis/tts/unified-talker"
+  },
+  "lastUpdatedUtc": "2026-09-07T06:58:42+00:00"
+}

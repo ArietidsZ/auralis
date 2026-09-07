@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "3",
+  "packageId": "asr",
+  "version": "1.0.0",
+  "status": "draft",
+  "source": {
+    "repoId": "x",
+    "upstreamModelId": "x",
+    "licenseSource": "x"
+  },
+  "runtime": {
+    "backend": "onnx",
+    "apiContractVersion": "1",
+    "targetPlatforms": [
+      {
+        "platform": "android"
+      }
+    ],
+    "streaming": false
+  },
+  "capabilities": {
+    "modes": [
+      "transcribe"
+    ],
+    "languages": []
+  },
+  "files": [],
+  "roles": {},
+  "$expectedError": {
+    "code": "unknown-schema"
+  }
+}

@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+"""Compile and execute production Swift TTS sampling functions on small tensors."""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+
+ROOT = Path(__file__).resolve().parents[1]
+
+HARNESS = r'''
+@main struct Checks {
+    static func main() throws {
+        let cp = Qwen3TtsConfig(talkerVocab: 5, cpVocab: 3, codecEosId: 4)
+        var rng = Qwen3TtsProtocol.SplitMix64(seed: 7)
+        var untouched = rng
+        for _ in 0..<100 {
+            let token = try Qwen3TtsProtocol.sampleCodePredictor(logits: [1, 5, 5], config: cp,
+                temperature: 0, topK: 0, random: &rng)
+            precondition(token == 1)
+        }
+        precondition(rng.nextDouble() == untouched.nextDouble(), "greedy consumed randomness")
+        for _ in 0..<100 {
+            let token = try Qwen3TtsProtocol.sampleCodePredictor(logits: [-Float.infinity, 5, 5], config: cp,
+                temperature: 0.9, topK: 1, random: &rng)
+            precondition(token == 1, "topK=1 tie was random")
+        }
+        let masked = try Qwen3TtsProtocol.sampleGroup0(logits: [0, 1, 2, 100, 200], config: cp,
+            temperature: 0, topK: 0, repetitionPenalty: 1.05, generated: [], random: &rng, suppressEos: true)
+        precondition(masked == 2, "argmax bypassed reserved/EOS mask")
+        let eos = try Qwen3TtsProtocol.sampleGroup0(logits: [0, 1, 2, 100, 200], config: cp,
+            temperature: 0, topK: 0, repetitionPenalty: 1.05, generated: [], random: &rng, suppressEos: false)
+        precondition(eos == 4)
+        let rep = Qwen3TtsConfig(talkerVocab: 6, cpVocab: 5, codecEosId: 5)
+        let repeated = try Qwen3TtsProtocol.sampleGroup0(logits: [0, 0, 2, -2, 1.8, -Float.infinity], config: rep,
+            temperature: 0, topK: 0, repetitionPenalty: 1.05, generated: [2, 2, 2, 3, 3], random: &rng, suppressEos: false)
+        precondition(repeated == 2, "repetition penalty applied more than once per token")
+        let negative = try Qwen3TtsProtocol.sampleGroup0(logits: [-10, -10, -2, -2.05, -10, -Float.infinity], config: rep,
+            temperature: 0, topK: 0, repetitionPenalty: 1.05, generated: [2], random: &rng, suppressEos: false)
+        precondition(negative == 3, "negative logit penalty has wrong sign")
+        let tiny = try Qwen3TtsProtocol.sampleCodePredictor(logits: [-Float.greatestFiniteMagnitude, 0, Float.greatestFiniteMagnitude],
+            config: cp, temperature: Float.leastNonzeroMagnitude, topK: 0, random: &rng)
+        precondition(tiny == 2, "tiny temperature overflowed")
+        var rejected = 0
+        for temperature in [-Float.infinity, -1, Float.nan, Float.infinity] {
+            do {
+                _ = try Qwen3TtsProtocol.sampleCodePredictor(logits: [0, 1, 2], config: cp,
+                    temperature: temperature, topK: 0, random: &rng)
+                fatalError("invalid temperature accepted")
+            } catch { rejected += 1 }
+        }
+        for logits in [[Float.nan, 0, 1], [Float.infinity, 0, 1], [-Float.infinity, -Float.infinity, -Float.infinity], [0, 1], []] {
+            do {
+                _ = try Qwen3TtsProtocol.sampleCodePredictor(logits: logits, config: cp,
+                    temperature: 0.9, topK: 0, random: &rng)
+                fatalError("invalid logits accepted")
+            } catch { rejected += 1 }
+        }
+        do {
+            _ = try Qwen3TtsProtocol.sampleCodePredictor(logits: [0, 1, 2], config: cp,
+                temperature: 0.9, topK: -1, random: &rng)
+            fatalError("negative topK accepted")
+        } catch { rejected += 1 }
+        for history in [[-1], [99]] {
+            do {
+                _ = try Qwen3TtsProtocol.sampleGroup0(logits: [0, 1, 2, 3, 4], config: cp,
+                    temperature: 0.9, topK: 0, repetitionPenalty: 1.05, generated: history, random: &rng, suppressEos: false)
+                fatalError("invalid history accepted")
+            } catch { rejected += 1 }
+        }
+        for penalty in [Float.nan, 0, -1, Float.infinity] {
+            do {
+                _ = try Qwen3TtsProtocol.sampleGroup0(logits: [0, 1, 2, 3, 4], config: cp,
+                    temperature: 0.9, topK: 0, repetitionPenalty: penalty, generated: [], random: &rng, suppressEos: false)
+                fatalError("invalid penalty accepted")
+            } catch { rejected += 1 }
+        }
+        var counts = [0, 0, 0]
+        for _ in 0..<20000 {
+            let token = try Qwen3TtsProtocol.sampleCodePredictor(logits: [-1, 0, 1], config: cp,
+                temperature: 0.9, topK: 0, random: &rng)
+            counts[token] += 1
+        }
+        let weights = [-1.0, 0, 1].map { exp($0 / Double(Float(0.9))) }
+        let total = weights.reduce(0, +)
+        for i in 0..<3 { precondition(abs(Double(counts[i]) / 20000 - weights[i] / total) < 0.015) }
+        print("PASS: greedy/first tie/RNG preservation; masks; unique positive/negative repetition penalty; tiny temperature; \(rejected) invalid-input checks; temperature=0.9 distribution \(counts)")
+    }
+}
+'''
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    output = args.output.resolve()
+    output.mkdir(parents=True, exist_ok=True)
+    source = (ROOT / "ios/DialectInterpreter/Inference/TtsEngine.swift").read_text()
+    rng = source[source.index("    struct SplitMix64 {"):source.index("    struct PrefillState {")]
+    sampling = source[source.index("    static func sampleGroup0("):source.index("    // MARK: Mel frontend")]
+    # The config holds only numeric fixture values; sampler/RNG source is exact.
+    harness = "import Foundation\nenum OrtInferenceFailure: Error { case badInput(String) }\nstruct Qwen3TtsConfig { let talkerVocab: Int; let cpVocab: Int; let codecEosId: Int }\nenum Qwen3TtsProtocol {\n" + rng + sampling + "}\n" + HARNESS
+    (output / "checks.swift").write_text(harness)
+    command = ["swiftc", "-O", "-parse-as-library", "-swift-version", "5", "-module-cache-path", str(output / "module-cache"),
+               str(output / "checks.swift"), "-o", str(output / "checks")]
+    with (output / "build.log").open("w") as log:
+        subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True)
+    result = subprocess.run([str(output / "checks")], check=True, capture_output=True, text=True)
+    (output / "checks.log").write_text(result.stdout + result.stderr)
+    (output / "provenance.json").write_text(json.dumps({"compileCommand": command,
+        "samplingSha256": hashlib.sha256(sampling.encode()).hexdigest(),
+        "rngSha256": hashlib.sha256(rng.encode()).hexdigest()}, indent=2) + "\n")
+    print(result.stdout)
+
+
+if __name__ == "__main__":
+    main()

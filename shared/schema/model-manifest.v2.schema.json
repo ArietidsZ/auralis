@@ -1,0 +1,358 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auralis.local/schemas/model-manifest.v2.schema.json",
+  "title": "Auralis model package manifest (v2, unified field system)",
+  "description": "Single source of truth for cross-platform model package contracts. Canonical field names use camelCase (sizeBytes, sha256). v1 manifests (schemaVersion=1, size_bytes) are a migration input only; see convert/manifest_contract.py for the migration rules. The normative validator is convert/manifest_contract.py; this JSON Schema documents the structure.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "packageId",
+    "version",
+    "status",
+    "source",
+    "runtime",
+    "capabilities",
+    "files",
+    "roles"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "2"
+    },
+    "packageId": {
+      "enum": [
+        "asr",
+        "mt",
+        "tts"
+      ]
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Package version. Placeholder values (0.0.0, strings containing 'placeholder'/'todo'/'tbd') are invalid for status=verified."
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "verified"
+      ],
+      "description": "draft may lack sizes/hashes/revisions but must never be treated as app-ready. verified requires complete, non-placeholder data and does not bypass runtime file verification or model smoke gates."
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "repoId",
+        "upstreamModelId",
+        "licenseSource"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "repoId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{40}$",
+          "description": "Full 40-character model repository git commit. Required for verified unless a complete content-pinned archive source is present. Separate from runtime.runtimeRevision."
+        },
+        "upstreamModelId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "licenseSource": {
+          "type": "string",
+          "minLength": 1
+        },
+        "archive": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "url",
+            "sha256",
+            "sizeBytes",
+            "stripPrefix"
+          ],
+          "description": "Content-pinned TAR release source. When present, its exact archive hash/size replace the requirement for a model repository commit; file hashes remain mandatory. Only allow-listed regular files are extracted.",
+          "properties": {
+            "url": {
+              "type": "string",
+              "pattern": "^https://",
+              "description": "No credentials, query or fragment."
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "sizeBytes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "stripPrefix": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Safe relative directory prefix inside the archive, no trailing slash."
+            }
+          }
+        },
+        "transform": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "inputPath",
+            "inputSha256"
+          ],
+          "description": "One audited metadata-only STQ conversion. Source pins the original artifact; files pins the derived runtime artifact. No arbitrary transform commands.",
+          "properties": {
+            "id": {
+              "const": "hymt-stq42-to43-v1"
+            },
+            "inputPath": {
+              "type": "string"
+            },
+            "inputSha256": {
+              "const": "93e025c93cc082e73a3f142b757623a8b9cf541c020a8013ca4ee669556860ab"
+            }
+          }
+        },
+        "build": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "recipeId",
+            "provenancePath"
+          ],
+          "description": "Data-only provenance for an audited compiled TTS API2 package. Upstream revision must still be pinned, even with a prebuilt archive. Does not contain executable commands.",
+          "properties": {
+            "recipeId": {
+              "const": "auralis.qwen3-tts.api2.fp32.v1"
+            },
+            "provenancePath": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Safe package-relative JSON supportAsset declared in files with its own hash."
+            }
+          }
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "required": [
+        "backend",
+        "apiContractVersion",
+        "targetPlatforms",
+        "streaming"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "backend": {
+          "enum": [
+            "onnx",
+            "gguf-llama-cpp"
+          ],
+          "description": "Execution backend this bundle is built for. Never inferred from file extension at runtime."
+        },
+        "apiContractVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "quantization": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Declared quantization type, e.g. 'none', 'int4', '1.25bit-stq'."
+        },
+        "runtimeRevision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Pinned runtime revision (e.g. llama.cpp commit or ORT version) this bundle was verified against. Required non-null for verified."
+        },
+        "executionProviders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Declared (not device-verified) execution providers."
+        },
+        "targetPlatforms": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "platform"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "platform": {
+                "enum": [
+                  "android",
+                  "ios"
+                ]
+              },
+              "minSdk": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "minOsVersion": {
+                "type": "string",
+                "minLength": 1
+              },
+              "abis": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "streaming": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Documented runtime constraints, e.g. kernel requirements. Facts only; no performance claims."
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "required": [
+        "modes",
+        "languages",
+        "verification"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "modes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "transcribe",
+              "translate",
+              "synthesize",
+              "clone"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "languages": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "description": "Language identifiers this package actually supports for its modes. Empty allowed only for draft."
+        },
+        "clone": {
+          "type": "boolean",
+          "default": false
+        },
+        "streaming": {
+          "type": "boolean",
+          "default": false
+        },
+        "verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Per-capability verification state. Values: unverified | bench-verified | device-verified. Only UI-visible claims with device-verified may be shown as supported.",
+          "properties": {
+            "languages": {
+              "enum": [
+                "unverified",
+                "bench-verified",
+                "device-verified"
+              ]
+            },
+            "clone": {
+              "enum": [
+                "unverified",
+                "bench-verified",
+                "device-verified"
+              ]
+            },
+            "streaming": {
+              "enum": [
+                "unverified",
+                "bench-verified",
+                "device-verified"
+              ]
+            },
+            "endToEnd": {
+              "enum": [
+                "unverified",
+                "bench-verified",
+                "device-verified"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "description": "Every packaged file including ONNX external data. Draft may use an empty list; verified requires a non-empty list with complete sizeBytes/sha256 for every entry.",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "classification"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Package-relative POSIX path. Absolute paths, '..' segments, empty segments, backslashes and drive letters are invalid."
+          },
+          "sizeBytes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Exact byte size. Null allowed only for draft. Never reuse the bundle total as a per-file or memory figure."
+          },
+          "sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "64 lowercase hex chars. Empty string is invalid; use null when unknown (draft only). All-zero strings are placeholders and invalid for verified."
+          },
+          "classification": {
+            "enum": [
+              "model",
+              "supportAsset"
+            ]
+          },
+          "externalData": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Paths of ONNX external-data files belonging to this model file. Every referenced path must exist in files."
+          }
+        }
+      }
+    },
+    "roles": {
+      "type": "object",
+      "description": "Logical role -> file path. Every referenced path must exist in files with classification=model. Verified manifests require at least one role.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  }
+}

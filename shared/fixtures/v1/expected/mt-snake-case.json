@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "2",
+  "packageId": "mt",
+  "version": "0.0.0",
+  "status": "draft",
+  "source": {
+    "repoId": "AngelSlim/Hy-MT1.5-1.8B-1.25bit-GGUF",
+    "revision": null,
+    "upstreamModelId": "AngelSlim/Hy-MT1.5-1.8B-1.25bit-GGUF",
+    "licenseSource": "upstream-repository"
+  },
+  "runtime": {
+    "backend": "gguf-llama-cpp",
+    "apiContractVersion": "1",
+    "quantization": null,
+    "runtimeRevision": null,
+    "executionProviders": [
+      "cpu"
+    ],
+    "streaming": false,
+    "targetPlatforms": [
+      {
+        "platform": "android",
+        "minSdk": 29,
+        "abis": [
+          "arm64-v8a"
+        ]
+      },
+      {
+        "platform": "ios",
+        "minOsVersion": "17.0",
+        "abis": [
+          "arm64"
+        ]
+      }
+    ]
+  },
+  "capabilities": {
+    "modes": [
+      "translate"
+    ],
+    "languages": [],
+    "verification": {}
+  },
+  "files": [
+    {
+      "path": "mt/Hy-MT1.5-1.8B-1.25bit.gguf",
+      "sizeBytes": null,
+      "sha256": null,
+      "classification": "model"
+    }
+  ],
+  "roles": {
+    "translator": "mt/Hy-MT1.5-1.8B-1.25bit.gguf"
+  }
+}

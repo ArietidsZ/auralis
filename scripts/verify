@@ -1,0 +1,246 @@
+#!/usr/bin/env python3
+"""Auralis verify: the single root verification entrypoint.
+
+Scopes/modes:
+    --mode fast          shared schema/fixtures + Python light checks + Swift core-checks when a
+                         swift toolchain exists (otherwise reported blocked — never a silent skip)
+    --scope android      contracts + python light + :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
+    --scope ios          contracts + python light + Swift core-checks + xcodebuild unsigned build/test
+                         (core results are kept even when full Xcode is missing)
+    --scope models       contracts + real model validation against --models-dir PATH
+    --mode full          doctor probes + every check that can run; missing environments are
+                         reported blocked per scope and never mask other results
+
+Exit codes: 0 pass, 1 code/test failure, 2 missing environment/artifacts,
+3 contract invalid, 4 argument errors. Priority on multi-failure: 3 > 1 > 2.
+JSON report (pass/fail/blocked/skipped + command + reason + duration) is written
+only when --output DIR is declared.
+"""
+
+from __future__ import annotations
+
+import argparse
+import shutil
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from verify_lib import (  # noqa: E402
+    ArgParser, CONTRACT_TOOL, EXIT_ARGS, EXIT_OK, REPO_ROOT, Reporter, CheckResult,
+    probe_android_sdk, probe_jdk, probe_python3, probe_xcode,
+)
+
+
+def run_contracts(reporter: Reporter) -> None:
+    if not CONTRACT_TOOL.is_file():
+        reporter.add(CheckResult("contracts", "fail", f"missing {CONTRACT_TOOL}"))
+        return
+    reporter.run_cmd("contracts-shared-dir", [sys.executable, str(CONTRACT_TOOL), "check"], cwd=REPO_ROOT, contract_errors=True)
+    reporter.run_cmd("contracts-fixtures", [sys.executable, str(CONTRACT_TOOL), "check-fixtures"], cwd=REPO_ROOT, contract_errors=True)
+
+
+def run_python_light(reporter: Reporter) -> None:
+    # Syntax compile of all lane-C Python (catches breakage without importing torch).
+    reporter.run_cmd(
+        "python-compileall",
+        [sys.executable, "-m", "compileall", "-q", str(REPO_ROOT / "convert"), str(REPO_ROOT / "scripts")],
+        cwd=REPO_ROOT,
+    )
+    # Stdlib unit tests for the contract layer and script plumbing (exit
+    # codes, migration, path rules, simulator selection).
+    reporter.run_cmd(
+        "python-unittest",
+        [sys.executable, "-m", "unittest", "discover", "-s", str(REPO_ROOT / "convert" / "tests"),
+         "-p", "test_*.py"],
+        cwd=REPO_ROOT,
+    )
+    reporter.run_cmd(
+        "python-unittest-scripts",
+        [sys.executable, "-m", "unittest", "discover", "-s", str(REPO_ROOT / "scripts" / "tests"),
+         "-p", "test_*.py"],
+        cwd=REPO_ROOT,
+    )
+
+
+def run_android(reporter: Reporter) -> None:
+    java_ok, _, _ = probe_jdk()
+    sdk_ok, _, _ = probe_android_sdk()
+    if not java_ok or not sdk_ok:
+        missing = "JDK 17+" if not java_ok else "Android SDK (Platform 35, Build-Tools)"
+        reporter.add(CheckResult(
+            "android-gradle", "blocked",
+            f"missing {missing}; run scripts/doctor for fix commands",
+            command="cd android && ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:lintDebug --console=plain",
+        ))
+        return
+    reporter.run_cmd(
+        "android-gradle",
+        ["./gradlew", ":app:testDebugUnitTest", ":app:assembleDebug", ":app:lintDebug", "--console=plain"],
+        cwd=REPO_ROOT / "android",
+        timeout=1800,
+    )
+
+
+def run_swift_core(reporter: Reporter) -> None:
+    """Host-runnable Swift data-layer checks (core-checks, SwiftPM).
+
+    Run whenever the `swift` toolchain is present (fast included, so macOS CI
+    gets real Swift coverage). Missing swift is reported BLOCKED — never a
+    silent skip counted as pass.
+    """
+    if shutil.which("swift") is None:
+        reporter.add(CheckResult(
+            "swift-core-checks", "blocked",
+            "swift toolchain not found; data-layer Swift checks (shared fixture "
+            "consistency + staged install) cannot run on this host",
+            command="swift run core-checks",
+        ))
+        return
+    build = reporter.run_cmd("swift-core-build", ["swift", "build", "--product", "core-checks"], cwd=REPO_ROOT, timeout=900)
+    if build.status == "pass":
+        reporter.run_cmd("swift-core-checks", [str(REPO_ROOT / ".build" / "debug" / "core-checks")],
+                         cwd=REPO_ROOT, timeout=300)
+    else:
+        reporter.add(CheckResult("swift-core-checks", "blocked", "current core build failed; old executable was not run"))
+    # Session-contract host runner (pipeline orchestration, B-owned harness):
+    # actually invoked here so its cases run in CI/verify — not just filed away.
+    host_runner = REPO_ROOT / "ios" / "DialectInterpreterTests" / "SessionCoreTests" / "run_host_tests.sh"
+    if host_runner.is_file():
+        reporter.run_cmd("session-host-tests", ["bash", str(host_runner)], cwd=REPO_ROOT, timeout=300)
+    else:
+        reporter.add(CheckResult("session-host-tests", "fail", "session host runner is missing"))
+
+
+def run_ios(reporter: Reporter) -> None:
+    xcode_ok, _, _ = probe_xcode()
+    project = REPO_ROOT / "ios" / "DialectInterpreter.xcodeproj"
+    if not project.is_dir():
+        reporter.add(CheckResult("ios-xcodebuild", "fail", f"missing {project}"))
+        return
+    if not xcode_ok:
+        reporter.add(CheckResult(
+            "ios-xcodebuild", "blocked",
+            "full Xcode (iphonesimulator SDK) not available; install Xcode then sudo xcode-select -s /Applications/Xcode.app",
+            command=("xcodebuild -project ios/DialectInterpreter.xcodeproj -scheme DialectInterpreter "
+                     "-destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build"),
+        ))
+        return
+    build_ok = reporter.run_cmd(
+        "ios-xcodebuild",
+        ["xcodebuild", "-project", str(project), "-scheme", "DialectInterpreter",
+         "-destination", "generic/platform=iOS Simulator", "CODE_SIGNING_ALLOWED=NO", "build"],
+        cwd=REPO_ROOT,
+        timeout=1800,
+    )
+    if build_ok.status != "pass":
+        return
+    # Unit tests need a concrete simulator; choose one via `--json` output
+    # (UDID) instead of parsing text or guessing device names.
+    import subprocess as _sp
+    from verify_lib import pick_ios_simulator
+    devices = _sp.run(["xcrun", "simctl", "list", "devices", "available", "--json"],
+                      capture_output=True, text=True).stdout
+    udid = pick_ios_simulator(devices)
+    if not udid:
+        reporter.add(CheckResult("ios-swift-tests", "blocked",
+                                 "no available iPhone simulator found on this machine"))
+        return
+    destination = f"platform=iOS Simulator,id={udid}"
+    reporter.run_cmd(
+        "ios-swift-tests",
+        ["xcodebuild", "-project", str(project), "-scheme", "DialectInterpreter",
+         "-destination", destination, "CODE_SIGNING_ALLOWED=NO", "test"],
+        cwd=REPO_ROOT,
+        timeout=1800,
+    )
+
+
+def run_models(reporter: Reporter, models_dir: Path | None, suite: Path | None = None,
+               mt_library: Path | None = None, runner_pythons: list[str] | None = None,
+               output: Path | None = None) -> None:
+    validate = REPO_ROOT / "convert" / "validate_models.py"
+    if not models_dir or not Path(models_dir).is_dir():
+        reporter.add(CheckResult(
+            "models-validate", "blocked",
+            f"models directory {'not provided' if not models_dir else 'not found: ' + str(models_dir)}; "
+            "pass --models-dir PATH (populated via convert/fetch_model.py)",
+            command="python3 convert/validate_models.py --models-dir PATH",
+        ))
+        return
+    command = [sys.executable, str(validate), "--models-dir", str(models_dir)]
+    if suite:
+        command += ["--suite", str(suite)]
+    if mt_library:
+        command += ["--mt-library", str(mt_library)]
+    for runner_python in runner_pythons or []:
+        command += ["--runner-python", runner_python]
+    if output:
+        command += ["--json-report", str(output / "models.json")]
+    reporter.run_cmd(
+        "models-validate",
+        command,
+        cwd=REPO_ROOT,
+        timeout=1800,
+        pass_statuses=("pass", "blocked"),  # validate_models exit 2 = blocked/artifacts missing
+        contract_errors=True,
+    )
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = ArgParser(description="Auralis root verification entrypoint")
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--mode", choices=["fast", "full"])
+    mode.add_argument("--scope", choices=["android", "ios", "models"])
+    parser.add_argument("--models-dir", type=Path, help="models directory for --scope models")
+    parser.add_argument("--suite", type=Path, help="real model task suite for models/full verification")
+    parser.add_argument("--mt-library", type=Path, help="pinned native MT C ABI library")
+    parser.add_argument("--runner-python", action="append", help="runner interpreter, e.g. tts=/venv/bin/python")
+    parser.add_argument("--output", type=Path, help="directory for the JSON report")
+    args = parser.parse_args(argv)
+
+    if args.scope == "models" and not args.models_dir:
+        print("--scope models requires --models-dir PATH", file=sys.stderr)
+        return EXIT_ARGS
+    if (args.suite or args.mt_library or args.runner_python) and args.scope != "models" and args.mode != "full":
+        parser.error("model execution options require --scope models or --mode full")
+
+    reporter = Reporter()
+    run_contracts(reporter)
+
+    if args.mode == "fast":
+        run_python_light(reporter)
+        # Swift data-layer checks run whenever a toolchain exists; on hosts
+        # without one the check is reported blocked (visible), never skipped.
+        run_swift_core(reporter)
+    elif args.mode == "full":
+        run_python_light(reporter)
+        # Doctor probes are reported but never abort the run.
+        for probe_id, probe in (("probe-python3", probe_python3), ("probe-jdk17", probe_jdk),
+                                ("probe-android-sdk", probe_android_sdk), ("probe-xcode-full", probe_xcode)):
+            ok, detail, hint = probe()
+            reporter.add(CheckResult(probe_id, "pass" if ok else "blocked", detail if ok else (hint or detail)))
+        run_swift_core(reporter)
+        run_android(reporter)
+        run_ios(reporter)
+        run_models(reporter, args.models_dir or REPO_ROOT / "models", args.suite, args.mt_library, args.runner_python, args.output)
+    elif args.scope == "android":
+        run_python_light(reporter)
+        run_android(reporter)
+    elif args.scope == "ios":
+        run_python_light(reporter)
+        # Core Swift data checks run BEFORE the Xcode determination and are
+        # kept as real results even when full Xcode is missing.
+        run_swift_core(reporter)
+        run_ios(reporter)
+    elif args.scope == "models":
+        run_models(reporter, args.models_dir, args.suite, args.mt_library, args.runner_python, args.output)
+
+    reporter.print_table()
+    if args.output:
+        report_path = reporter.write_json(args.output, args.mode or f"scope-{args.scope}")
+        print(f"JSON report: {report_path}")
+    return reporter.aggregate_exit()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

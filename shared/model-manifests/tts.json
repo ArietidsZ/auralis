@@ -1,0 +1,293 @@
+{
+  "schemaVersion": "2",
+  "packageId": "tts",
+  "version": "2.0.0-preview.1",
+  "status": "draft",
+  "source": {
+    "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+    "revision": "5d83992436eae1d760afd27aff78a71d676296fc",
+    "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+    "licenseSource": "https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-Base (Apache-2.0 model metadata)",
+    "build": {
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "provenancePath": "tts/build-provenance.json"
+    }
+  },
+  "runtime": {
+    "backend": "onnx",
+    "apiContractVersion": "2",
+    "quantization": "none",
+    "executionProviders": [
+      "cpu"
+    ],
+    "targetPlatforms": [
+      {
+        "platform": "android",
+        "minSdk": 29,
+        "abis": [
+          "arm64-v8a"
+        ]
+      },
+      {
+        "platform": "ios",
+        "minOsVersion": "17.0",
+        "abis": [
+          "arm64"
+        ]
+      }
+    ],
+    "streaming": true,
+    "runtimeRevision": "onnxruntime-1.24.2",
+    "notes": "One talker graph for prefill/decode; explicit ICL reference preparation; causal state vocoder emits positive PCM chunks during generation. FP32 CPU is the verified numerical baseline. Hardware, quality and latency qualification remains incomplete; this package stays draft."
+  },
+  "capabilities": {
+    "modes": [
+      "synthesize",
+      "clone"
+    ],
+    "languages": [
+      "zh",
+      "en"
+    ],
+    "verification": {
+      "languages": "unverified",
+      "endToEnd": "unverified",
+      "clone": "unverified",
+      "device": "unverified"
+    }
+  },
+  "files": [
+    {
+      "path": "tts/code_predictor.onnx",
+      "sizeBytes": 214572,
+      "sha256": "166eb1d1cbd8a55cba7725b37b29e6ee4ca827bb2d1a98c2022d48acad5c316a",
+      "classification": "model",
+      "externalData": [
+        "tts/code_predictor.onnx.data"
+      ]
+    },
+    {
+      "path": "tts/code_predictor.onnx.data",
+      "sizeBytes": 440446976,
+      "sha256": "ed9f6d10630abd733e0001c4624c2ce677f6d903124a0f869e0f59318b14fec6",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/config.json",
+      "sizeBytes": 1288,
+      "sha256": "839950535f42531ffbf7d81f3f2a1263487d8edd04a321e4f80f8c00f2c944c5",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_0.npy",
+      "sizeBytes": 8388736,
+      "sha256": "2cf4b5d6f6fca977657bc82634eea275cd072036a6a16484febd41b5445abff1",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_1.npy",
+      "sizeBytes": 8388736,
+      "sha256": "c8655ecd642f17d04a85ea37c2665205a8666843925227b25dc8c8bceb8015f5",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_10.npy",
+      "sizeBytes": 8388736,
+      "sha256": "bf17275629b464a4a38826beeb79b99e0e58cc02c530da2e572b9b7d9972fb2d",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_11.npy",
+      "sizeBytes": 8388736,
+      "sha256": "dee4af40f34626a4951fba2b894120c8cf8293024ae068d1f2579f356c6e2284",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_12.npy",
+      "sizeBytes": 8388736,
+      "sha256": "e307b70fbaddc6e7e48259b4e8c9417f24b155be9281205f38bbf40c64359951",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_13.npy",
+      "sizeBytes": 8388736,
+      "sha256": "cc15bfc4290be77523f8f14c78b9b1710042b5d078291ee87038dfb7ecb3f185",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_14.npy",
+      "sizeBytes": 8388736,
+      "sha256": "aa0de98365775e1cb968514595ff7e23936bea21c2bda6e5bab7e7052cdf97ba",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_2.npy",
+      "sizeBytes": 8388736,
+      "sha256": "5436624853b3091bc1b88cf37a4d60af46346c508237d72e597bed561a5b2138",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_3.npy",
+      "sizeBytes": 8388736,
+      "sha256": "1041b78ea5158c96cda4aae45bd21707a6fe8c92e6831715075d70d7b5b8e77a",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_4.npy",
+      "sizeBytes": 8388736,
+      "sha256": "17af8770454ab26ca82f092d0d5a634680e4d14412d327fb8b6f94a57b256800",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_5.npy",
+      "sizeBytes": 8388736,
+      "sha256": "b9abbf163b50ba0207e2196772c67b2e1025cf7f4fbe378c6a44123869253ad9",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_6.npy",
+      "sizeBytes": 8388736,
+      "sha256": "1fb06414cb7d4edcd73142e79cbb4bd46f918517e5812b73345ade9535c6eafb",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_7.npy",
+      "sizeBytes": 8388736,
+      "sha256": "08b8d7bd125d75ffa42f515153e66ade42cb16c2eea6ebe1935a2ac2509cbad0",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_8.npy",
+      "sizeBytes": 8388736,
+      "sha256": "a2cf331bb3e2f2c0d44c91c55af045b9c975199331e4566a373b883ce04e9964",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/cp_codec_embedding_9.npy",
+      "sizeBytes": 8388736,
+      "sha256": "389422edef8c0b6dbf6cdb48359a0274b11984c04668c004810866784dab2942",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/talker_codec_embedding.npy",
+      "sizeBytes": 12583040,
+      "sha256": "47fa9e30f98b1528fc9b332d314f22a32fa33e187509a4d3537f8b2c31199e39",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/text_embedding.npy",
+      "sizeBytes": 1244659840,
+      "sha256": "e49a5ebb22075609520b91db99c33cf7590cefddc96d574a725a353ff0b1f480",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/text_projection_fc1_bias.npy",
+      "sizeBytes": 8320,
+      "sha256": "2ca292516e9574fa67e0174a49770051156246bb0679096f0514286091eea7c3",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/text_projection_fc1_weight.npy",
+      "sizeBytes": 16777344,
+      "sha256": "94b62d00b306c5db843ac86dc135354889a2ce40d7adce79ae23f63c3d6acf19",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/text_projection_fc2_bias.npy",
+      "sizeBytes": 4224,
+      "sha256": "0725b7f7d0318f430723177d046eaf3b08c7a65d4a4a6dd264d61e574e66ff19",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/embeddings/text_projection_fc2_weight.npy",
+      "sizeBytes": 8388736,
+      "sha256": "d6d31d3bca45fee1d05612f3c9eb26e0c34587be52d2c34c208c79e6656f15a6",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/reference_encoder.onnx",
+      "sizeBytes": 461120,
+      "sha256": "4294aacfaf7419f6d8d5e6bac14cbe1b1b2ca9f401ad698a5dfe7f6427eb3ad0",
+      "classification": "model",
+      "externalData": [
+        "tts/reference_encoder.onnx.data"
+      ]
+    },
+    {
+      "path": "tts/reference_encoder.onnx.data",
+      "sizeBytes": 190069504,
+      "sha256": "528902f29affbf7acca8112335fb3230a3eb0384a8c5dca999f7917b1170b62a",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/speaker_encoder.onnx",
+      "sizeBytes": 169925,
+      "sha256": "2248a1b994bb57daab773c640e9c4e328d94fbc3bc144266a67395787ff38716",
+      "classification": "model",
+      "externalData": [
+        "tts/speaker_encoder.onnx.data"
+      ]
+    },
+    {
+      "path": "tts/speaker_encoder.onnx.data",
+      "sizeBytes": 35409920,
+      "sha256": "9f6f588deda5ebbcda0a6b010bded2669faf861f402cc5ba5556c58d5c0aeb54",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/talker_api2.onnx",
+      "sizeBytes": 2310754,
+      "sha256": "adc1ae88f8880f09db518fd78476635f70eca21f82cf5ebff18fb3c929e24bd8",
+      "classification": "model",
+      "externalData": [
+        "tts/talker_api2.onnx.data"
+      ]
+    },
+    {
+      "path": "tts/talker_api2.onnx.data",
+      "sizeBytes": 1774424064,
+      "sha256": "823a937733f4c412f37f434e2d4e66f8a07d5f3e77da16c2a23dc7165583b24e",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/tokenizer/merges.txt",
+      "sizeBytes": 1671839,
+      "sha256": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/tokenizer/vocab.json",
+      "sizeBytes": 2776833,
+      "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/vocoder_streaming.onnx",
+      "sizeBytes": 409014,
+      "sha256": "3138ede6fb908e72eec4ee5904bd3f158cdcca4241caa7fdd0e5112f0aa38a36",
+      "classification": "model",
+      "externalData": [
+        "tts/vocoder_streaming.onnx.data"
+      ]
+    },
+    {
+      "path": "tts/vocoder_streaming.onnx.data",
+      "sizeBytes": 456219776,
+      "sha256": "80e961291971c0c3e3aee657f4b4ab40eb7c264f3aae90a6233d68f2b9ca0ba7",
+      "classification": "supportAsset"
+    },
+    {
+      "path": "tts/build-provenance.json",
+      "sizeBytes": 14248,
+      "sha256": "870c02499c2a4ba3c6ddc80afdf5afc498dd5645004e04b63f6a52ab6c30c954",
+      "classification": "supportAsset"
+    }
+  ],
+  "roles": {
+    "code_predictor": "tts/code_predictor.onnx",
+    "reference_encoder": "tts/reference_encoder.onnx",
+    "speaker_encoder": "tts/speaker_encoder.onnx",
+    "talker": "tts/talker_api2.onnx",
+    "vocoder": "tts/vocoder_streaming.onnx"
+  }
+}

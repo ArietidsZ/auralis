@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "2",
+  "packages": {
+    "asr": "asr.json",
+    "mt": "mt.json",
+    "tts": "tts.json"
+  }
+}

@@ -1,0 +1,2 @@
+# Lightweight fetch-only dependency (fixed-revision model downloads).
+huggingface-hub>=0.20.0

@@ -1,0 +1,26 @@
+# HEAVY toolchain for export/benchmark/task-fidelity runs only.
+# Schema/contract checks, scripts/verify --mode fast and the unit tests are
+# standard-library only and must never import torch (see specs 04 P03).
+# Fetch-only needs: convert/requirements-fetch.txt.
+# GPU acceleration (optional, mutually exclusive with the CPU onnxruntime here):
+#   pip install onnxruntime-gpu
+#
+# NOTE: the official `qwen-asr` / `qwen-tts` packages expose transformers + vLLM
+# backends only; they do NOT export ONNX. ONNX export is done via community
+# tooling / sherpa-onnx (see README). The `qwen-asr>=0.1.0` constraint was
+# previously unsatisfiable (latest release is 0.0.x); pinned to a real version.
+torch>=2.1.0
+qwen-tts>=0.1.0
+qwen-asr>=0.0.6
+transformers>=4.47.0
+onnx>=1.15.0
+onnxruntime>=1.18.0
+optimum>=1.17.0
+numpy>=1.24.0
+soundfile>=0.12.0
+scipy>=1.11.0
+huggingface-hub>=0.20.0
+
+# ASR fidelity gate (WER/CER). Install GPU acceleration separately if needed:
+#   pip install onnxruntime-gpu  (do NOT combine with the CPU onnxruntime above)
+jiwer>=3.0.0

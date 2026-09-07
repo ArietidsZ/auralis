@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auralis.local/schemas/dialect-catalog.v1.schema.json",
+  "title": "Auralis dialect catalog",
+  "description": "Cross-platform dialect/language catalog. Dialect IDs are permanently stable. Display names, ASR prompt language, MT language and TTS language are modeled as separate fields; a dialect's ASR prompt never implies TTS voice coverage for that dialect (ttsLanguageCode=zh does not prove the dialect can be synthesized).",
+  "type": "object",
+  "required": ["schemaVersion", "dialects", "targetLanguages"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "1" },
+    "dialects": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "displayLabel", "asrLanguage"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "displayLabel": { "type": "string", "minLength": 1 },
+          "shortLabel": { "type": "string" },
+          "family": { "type": "string", "description": "Dialect family group key, e.g. mandarin, wu, min." },
+          "asrLanguage": { "type": "string", "minLength": 1, "description": "ASR prompt language for this dialect." },
+          "mtLanguage": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Source language name passed to the MT stage for text transcribed from this dialect. Defaults to asrLanguage when absent (legacy consumers)."
+          },
+          "ttsLanguageCode": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "targetLanguages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "displayLabel"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z]{2,3}(-[a-zA-Z0-9-]+)?$" },
+          "displayLabel": { "type": "string", "minLength": 1 },
+          "asrLanguage": {
+            "type": "string",
+            "description": "Legacy field name kept for compatibility; for target languages this is the MT/translation target language name."
+          },
+          "mtLanguage": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Translation target language name; equals asrLanguage when both are present."
+          }
+        }
+      }
+    }
+  }
+}

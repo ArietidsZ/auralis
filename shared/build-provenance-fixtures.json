@@ -1,0 +1,2859 @@
+[
+  {
+    "name": "valid-complete",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 2713127,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": true
+  },
+  {
+    "name": "wrong-recipe",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "other",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 2713127,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "source-revision",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "ffffffffffffffffffffffffffffffffffffffff"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 2713127,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "source-repo",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "other",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 2713127,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "source-code",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "ffffffffffffffffffffffffffffffffffffffff"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 2713127,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "recipe-zero-hash",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 2713127,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "recipe-path-traversal",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "../build.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 2713127,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "wrong-ort",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.29.0"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 2713127,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "missing-output",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 2713127,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "duplicate-output",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 2713127,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        },
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 2713127,
+          "role": "vocoder"
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "output-traversal",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "../model",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 2713127,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "hash-mismatch",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "sizeBytes": 2713127,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "size-mismatch",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 1,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "boolean-size",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": true,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "string-size",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": "2713127",
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "fractional-size",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 1.5,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "wrong-role",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 2713127,
+          "role": "translator"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "wrong-external-flag",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 2713127,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "string-external-flag",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 2713127,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": "true"
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "missing-inputs",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 2713127,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "duplicate-input",
+    "manifest": {
+      "schemaVersion": "2",
+      "packageId": "tts",
+      "version": "1.1.0",
+      "status": "draft",
+      "source": {
+        "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "upstreamModelId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "licenseSource": "upstream repository",
+        "build": {
+          "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+          "provenancePath": "tts/build-provenance.json"
+        }
+      },
+      "runtime": {
+        "backend": "onnx",
+        "apiContractVersion": "2",
+        "quantization": "none",
+        "runtimeRevision": "onnxruntime-1.22.0",
+        "executionProviders": [
+          "cpu"
+        ],
+        "streaming": true,
+        "targetPlatforms": [
+          {
+            "platform": "android",
+            "minSdk": 29,
+            "abis": [
+              "arm64-v8a"
+            ]
+          },
+          {
+            "platform": "ios",
+            "minOsVersion": "17.0",
+            "abis": [
+              "arm64"
+            ]
+          }
+        ]
+      },
+      "capabilities": {
+        "modes": [
+          "synthesize"
+        ],
+        "languages": [
+          "zh"
+        ],
+        "clone": false,
+        "verification": {
+          "languages": "bench-verified",
+          "endToEnd": "unverified"
+        }
+      },
+      "files": [
+        {
+          "path": "tts/vocoder.onnx",
+          "sizeBytes": 2713127,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "classification": "model",
+          "externalData": [
+            "tts/vocoder.onnx.data"
+          ]
+        },
+        {
+          "path": "tts/vocoder.onnx.data",
+          "sizeBytes": 456261632,
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/tokenizer/vocab.json",
+          "sizeBytes": 2776833,
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "classification": "supportAsset"
+        },
+        {
+          "path": "tts/build-provenance.json",
+          "classification": "supportAsset",
+          "sizeBytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        }
+      ],
+      "roles": {
+        "vocoder": "tts/vocoder.onnx"
+      }
+    },
+    "record": {
+      "schemaVersion": 1,
+      "recipeId": "auralis.qwen3-tts.api2.fp32.v1",
+      "upstream": {
+        "repoId": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "0123456789abcdef0123456789abcdef01234567"
+      },
+      "sourceCode": {
+        "revision": "022e286b98fbec7e1e916cb940cdf532cd9f488e"
+      },
+      "recipe": {
+        "path": "build_tts_api2_package.py",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "toolchain": {
+        "onnxruntime": "1.24.2"
+      },
+      "inputs": [
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        {
+          "path": "model.safetensors",
+          "sizeBytes": 8,
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "vocoder.onnx",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 2713127,
+          "role": "vocoder"
+        },
+        {
+          "path": "vocoder.onnx.data",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sizeBytes": 456261632,
+          "role": "vocoder",
+          "externalData": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sizeBytes": 2776833
+        }
+      ]
+    },
+    "valid": false
+  }
+]

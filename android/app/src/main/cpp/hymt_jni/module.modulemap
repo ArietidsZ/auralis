@@ -1,0 +1,4 @@
+module hymt_core {
+    header "hymt_core.h"
+    export *
+}

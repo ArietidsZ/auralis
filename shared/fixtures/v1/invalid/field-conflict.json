@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1",
+  "packageId": "asr",
+  "version": "0.0.0",
+  "sourcePackageName": "Qwen/Qwen3-ASR-0.6B",
+  "files": [
+    {
+      "path": "asr/m.onnx",
+      "sizeBytes": 100,
+      "size_bytes": 200,
+      "sha256": null
+    }
+  ],
+  "$expectedError": {
+    "code": "field-conflict"
+  }
+}

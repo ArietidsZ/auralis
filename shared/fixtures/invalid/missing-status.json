@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "2",
+  "packageId": "asr",
+  "version": "1.0.0",
+  "source": {
+    "repoId": "x",
+    "upstreamModelId": "x",
+    "licenseSource": "x"
+  },
+  "runtime": {
+    "backend": "onnx",
+    "apiContractVersion": "1",
+    "targetPlatforms": [
+      {
+        "platform": "android"
+      }
+    ],
+    "streaming": false
+  },
+  "capabilities": {
+    "modes": [
+      "transcribe"
+    ],
+    "languages": []
+  },
+  "files": [],
+  "roles": {},
+  "$expectedError": {
+    "code": "missing-required"
+  }
+}

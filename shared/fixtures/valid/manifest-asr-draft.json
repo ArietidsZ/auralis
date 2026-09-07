@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "2",
+  "packageId": "asr",
+  "version": "0.1.0",
+  "status": "draft",
+  "source": {
+    "repoId": "Qwen/Qwen3-ASR-0.6B",
+    "revision": null,
+    "upstreamModelId": "Qwen/Qwen3-ASR-0.6B",
+    "licenseSource": "upstream repository"
+  },
+  "runtime": {
+    "backend": "onnx",
+    "apiContractVersion": "1",
+    "quantization": "int4",
+    "runtimeRevision": null,
+    "executionProviders": [
+      "cpu"
+    ],
+    "streaming": false,
+    "targetPlatforms": [
+      {
+        "platform": "android",
+        "minSdk": 29,
+        "abis": [
+          "arm64-v8a"
+        ]
+      }
+    ]
+  },
+  "capabilities": {
+    "modes": [
+      "transcribe"
+    ],
+    "languages": [],
+    "verification": {}
+  },
+  "files": [
+    {
+      "path": "asr/encoder.onnx",
+      "sizeBytes": null,
+      "sha256": null,
+      "classification": "model"
+    }
+  ],
+  "roles": {
+    "asr_encoder": "asr/encoder.onnx"
+  }
+}

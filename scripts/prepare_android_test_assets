@@ -1,0 +1,33 @@
+#!/usr/bin/env python3
+"""Provision local device-test inputs; recordings and activation caches are not published."""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import shutil
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--samples-dir', type=Path, required=True,
+    help='directory containing official test WAVs/transcript and locally prepared voice references')
+parser.add_argument('--cp-inputs-dir', type=Path, help='optional captured code-predictor input directory')
+args = parser.parse_args()
+assets = Path(__file__).resolve().parents[1] / 'android/app/src/androidTest/assets'
+groups = [('samples', args.samples_dir, ['de.wav', 'fast1.wav', 'noise1-en.wav', 'noise2.wav',
+                                       'rap1.wav', 'ref_en.wav', 'ref_zh.wav', 'transcript.txt'])]
+if args.cp_inputs_dir:
+    groups.append(('bf16_cp_inputs', args.cp_inputs_dir,
+                   ['metadata.json', 'generation_steps.bin', 'inputs_embeds.bin', 'past_keys.bin', 'past_values.bin']))
+missing = [str(source / name) for _, source, names in groups for name in names if not (source / name).is_file()]
+if missing:
+    raise SystemExit('Missing device-test inputs:\n' + '\n'.join(missing))
+records = []
+for folder, source, names in groups:
+    dest = assets / folder
+    dest.mkdir(parents=True, exist_ok=True)
+    for name in names:
+        data = (source / name).read_bytes()
+        if not data:
+            raise SystemExit('Empty device-test input: ' + str(source / name))
+        shutil.copyfile(source / name, dest / name)
+        records.append(dict(path=folder+'/'+name, sizeBytes=len(data), sha256=hashlib.sha256(data).hexdigest()))
+print(json.dumps(records, indent=2))

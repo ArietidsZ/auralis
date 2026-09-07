@@ -1,0 +1,52 @@
+{
+  "repository": "tencent/HY-MT1.5-1.8B-GGUF",
+  "revision": "265b2e615a7dc9b06c435dc878829ad99a512ba2",
+  "source": "https://huggingface.co/api/models/tencent/HY-MT1.5-1.8B-GGUF?blobs=true",
+  "files": [
+    {
+      "rfilename": ".gitattributes",
+      "blobId": "f2ce7cce717058a55dff8ba6fb8d85797e9550f0",
+      "size": 1701
+    },
+    {
+      "rfilename": "HY-MT1.5-1.8B-Q4_K_M.gguf",
+      "blobId": "bdc919af0546b1d1db29cb063e9c45ec1ff3bd42",
+      "size": 1133080512,
+      "lfs": {
+        "sha256": "4383ac0c3c8e476de98ff979c2a3f069f8c4fb385e7860cf2d28da896cc477c7",
+        "size": 1133080512,
+        "pointerSize": 135
+      }
+    },
+    {
+      "rfilename": "HY-MT1.5-1.8B-Q6_K.gguf",
+      "blobId": "a6e72b61bada58e8ff8dadd68dfd61d9884cc0b5",
+      "size": 1474785216,
+      "lfs": {
+        "sha256": "c3819200ab9a79cb29b9a05ce8920e2eb01ae7ce520094fc5b57356494f3c641",
+        "size": 1474785216,
+        "pointerSize": 135
+      }
+    },
+    {
+      "rfilename": "HY-MT1.5-1.8B-Q8_0.gguf",
+      "blobId": "88944f9b28f2c6989d644ff702fd492b26705bdf",
+      "size": 1908528288,
+      "lfs": {
+        "sha256": "6789b06d0902f2f5312c0e1703d56ccbddfcfb6c653d22519b7c720f7db9a98e",
+        "size": 1908528288,
+        "pointerSize": 135
+      }
+    },
+    {
+      "rfilename": "License.txt",
+      "blobId": "1b502c594266512e3f80deb4e021b9b52024f671",
+      "size": 16270
+    },
+    {
+      "rfilename": "README.md",
+      "blobId": "5c4200c70eb143ed7161d6aa90d87b47c7bb4c54",
+      "size": 8088
+    }
+  ]
+}

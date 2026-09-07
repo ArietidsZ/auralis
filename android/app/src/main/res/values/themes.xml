@@ -1,0 +1,6 @@
+<resources>
+    <!-- Edge-to-edge and system-bar appearance are handled by
+         androidx.activity.enableEdgeToEdge(); a plain NoActionBar theme avoids
+         the windowTranslucentStatus scrim conflict. -->
+    <style name="Theme.DialectInterpreter" parent="android:Theme.Material.NoActionBar" />
+</resources>

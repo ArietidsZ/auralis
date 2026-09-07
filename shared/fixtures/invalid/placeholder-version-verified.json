@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "2",
+  "packageId": "tts",
+  "version": "0.0.0",
+  "status": "verified",
+  "source": {
+    "repoId": "x",
+    "revision": "0123456789abcdef0123456789abcdef01234567",
+    "upstreamModelId": "x",
+    "licenseSource": "x"
+  },
+  "runtime": {
+    "backend": "onnx",
+    "apiContractVersion": "1",
+    "runtimeRevision": "ort-1.22.0",
+    "targetPlatforms": [
+      {
+        "platform": "android"
+      }
+    ],
+    "streaming": false
+  },
+  "capabilities": {
+    "modes": [
+      "synthesize"
+    ],
+    "languages": [
+      "zh"
+    ],
+    "verification": {
+      "languages": "unverified"
+    }
+  },
+  "files": [
+    {
+      "path": "tts/vocoder.onnx",
+      "sizeBytes": 10,
+      "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "classification": "model"
+    }
+  ],
+  "roles": {
+    "vocoder": "tts/vocoder.onnx"
+  },
+  "$expectedError": {
+    "code": "placeholder-value"
+  }
+}

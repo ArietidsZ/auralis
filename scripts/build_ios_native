@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+"""Build the pinned ASR/MT static XCFramework; ORT is supplied once by SwiftPM."""
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import zipfile
+
+ROOT = Path(__file__).resolve().parents[1]
+CACHE = Path(os.environ.get("AURALIS_CACHE", Path.home() / "Library/Caches/Auralis"))
+OUT = ROOT / ".build/ios-native"
+BUILD = CACHE / "ios/native-build"
+SHERPA_SHA = "917bed95c8e5c7c18aa4d69fea42e9ef8ef0a60e"
+LLAMA_SHA = "1e411d8f5a1e23525fa3265dfb4bd76265465397"
+ORT_SHA256 = "f7100a992d2a8135168c8afd831e6a58b465349101982aa58b3e11d36e600b54"
+JOBS = os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", "4")
+
+
+def run(*args: object, **kwargs: object) -> str:
+    command = [str(arg) for arg in args]
+    print("+", " ".join(command), flush=True)
+    return subprocess.run(command, check=True, text=True, **kwargs).stdout or ""
+
+
+def checkout(path: Path, url: str, revision: str, fetch_ref: str) -> None:
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        run("git", "init", path)
+        run("git", "-C", path, "remote", "add", "origin", url)
+        run("git", "-C", path, "fetch", "--depth=1", "origin", fetch_ref)
+        run("git", "-C", path, "checkout", "--detach", revision)
+    actual = run("git", "-C", path, "rev-parse", "HEAD", capture_output=True).strip()
+    dirty = run("git", "-C", path, "status", "--porcelain", "--untracked-files=no", capture_output=True).strip()
+    if actual != revision or dirty:
+        raise RuntimeError(f"Expected clean {revision} checkout at {path}; got {actual}")
+
+
+def main() -> int:
+    # Check before downloads or output creation. CLT/Catalyst cannot validate iOS.
+    try:
+        run("xcodebuild", "-version", capture_output=True)
+        for sdk in ("iphoneos", "iphonesimulator"):
+            run("xcrun", "--sdk", sdk, "--show-sdk-path", capture_output=True)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("BLOCKED: full Xcode with iPhoneOS and iPhoneSimulator SDKs is required.", file=sys.stderr)
+        return 2
+    for tool in ("cmake", "git", "curl"):
+        if not shutil.which(tool):
+            raise RuntimeError(f"Required tool missing: {tool}")
+
+    sherpa = CACHE / "ios/sherpa-onnx-1.13.7"
+    llama = CACHE / "mt/llama-stq"
+    checkout(sherpa, "https://github.com/k2-fsa/sherpa-onnx.git", SHERPA_SHA, SHERPA_SHA)
+    checkout(llama, "https://github.com/ggml-org/llama.cpp.git", LLAMA_SHA, LLAMA_SHA)
+    bridge = ROOT / "ios/DialectInterpreter/Inference/SherpaOnnx"
+    if (bridge / "c-api.h").read_bytes() != (sherpa / "sherpa-onnx/c-api/c-api.h").read_bytes():
+        raise RuntimeError("Vendored sherpa C API header differs from the pinned source")
+
+    # Identical artifact and checksum to onnxruntime SwiftPM 1.24.2.
+    archive = CACHE / "ios/pod-archive-onnxruntime-c-1.24.2.zip"
+    if not archive.exists():
+        run("curl", "--fail", "--location", "--retry", "3", "https://download.onnxruntime.ai/" + archive.name,
+            "--output", archive.with_suffix(".part"))
+        archive.with_suffix(".part").replace(archive)
+    digest = hashlib.sha256()
+    with archive.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    if digest.hexdigest() != ORT_SHA256:
+        raise RuntimeError(f"ORT checksum mismatch: {archive}")
+    ort_root = BUILD / "ort-1.24.2"
+    if not ort_root.exists():
+        with zipfile.ZipFile(archive) as package:
+            package.extractall(ort_root)
+    frameworks = list(ort_root.rglob("onnxruntime.xcframework"))
+    if len(frameworks) != 1:
+        raise RuntimeError("Expected exactly one official ORT XCFramework")
+    ort = frameworks[0]
+    OUT.mkdir(parents=True, exist_ok=True)
+    libraries = []
+    for sdk, arch in (("iphoneos", "arm64"), ("iphonesimulator", "arm64"), ("iphonesimulator", "x86_64")):
+        label = f"{sdk}-{arch}"
+        build = BUILD / label
+        runtime_slice = "ios-arm64" if sdk == "iphoneos" else "ios-arm64_x86_64-simulator"
+        runtime = ort / runtime_slice
+        env = dict(os.environ,
+                   SHERPA_ONNXRUNTIME_INCLUDE_DIR=str(runtime / "onnxruntime.framework/Headers"),
+                   SHERPA_ONNXRUNTIME_LIB_DIR=str(runtime))
+        common = ["-G", "Unix Makefiles", "-DCMAKE_SYSTEM_NAME=iOS", f"-DCMAKE_OSX_SYSROOT={sdk}",
+                  f"-DCMAKE_OSX_ARCHITECTURES={arch}", "-DCMAKE_OSX_DEPLOYMENT_TARGET=17.0",
+                  "-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY",
+                  "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_SHARED_LIBS=OFF"]
+        run("cmake", "-S", sherpa, "-B", build / "sherpa", *common,
+            "-DSHERPA_ONNX_ENABLE_PYTHON=OFF", "-DSHERPA_ONNX_ENABLE_BINARY=OFF",
+            "-DSHERPA_ONNX_ENABLE_TESTS=OFF", "-DSHERPA_ONNX_ENABLE_CHECK=OFF",
+            "-DSHERPA_ONNX_ENABLE_PORTAUDIO=OFF", "-DSHERPA_ONNX_ENABLE_JNI=OFF",
+            "-DSHERPA_ONNX_ENABLE_C_API=ON", "-DSHERPA_ONNX_ENABLE_WEBSOCKET=OFF",
+            "-DSHERPA_ONNX_ENABLE_TTS=OFF", "-DSHERPA_ONNX_ENABLE_SPEAKER_DIARIZATION=OFF",
+            "-DSHERPA_ONNX_BUILD_C_API_EXAMPLES=OFF", env=env)
+        run("cmake", "--build", build / "sherpa", "--target", "sherpa-onnx-c-api", "-j", JOBS)
+        run("cmake", "-S", ROOT / "android/app/src/main/cpp/hymt_jni", "-B", build / "mt", *common,
+            f"-DLLAMA_CPP_DIR={llama}", "-DHYMT_HOST_BUILD=OFF", "-DGGML_NATIVE=OFF",
+            "-DGGML_METAL=OFF", "-DGGML_BLAS=OFF", "-DGGML_ACCELERATE=ON",
+            "-DLLAMA_OPENSSL=OFF", "-DLLAMA_SUBPROCESS=OFF")
+        run("cmake", "--build", build / "mt", "--target", "hymt_core", "-j", JOBS)
+        # Pinned target closure, verified against upstream and the host build.
+        # Do not collect stale archives, CMake probe archives, or ORT itself.
+        archives = [build / "sherpa/lib" / f"lib{name}.a" for name in (
+            "kaldi-native-fbank-core", "kissfft-float", "sherpa-onnx-c-api",
+            "sherpa-onnx-core", "sherpa-onnx-fstfar", "sherpa-onnx-fst",
+            "sherpa-onnx-kaldifst-core", "kaldi-decoder-core", "ssentencepiece_core")]
+        archives += [build / "mt" / name for name in (
+            "libhymt_core.a", "llama.cpp-build/src/libllama.a",
+            "llama.cpp-build/common/libllama-common.a", "llama.cpp-build/common/libllama-common-base.a",
+            "llama.cpp-build/vendor/cpp-httplib/libcpp-httplib.a",
+            "llama.cpp-build/ggml/src/libggml.a", "llama.cpp-build/ggml/src/libggml-base.a",
+            "llama.cpp-build/ggml/src/libggml-cpu.a")]
+        if any(not archive.is_file() for archive in archives):
+            raise RuntimeError("Pinned native target closure is incomplete")
+        library = build / "libAuralisNative.a"
+        run("xcrun", "libtool", "-static", "-o", library, *archives)
+        symbols = run("xcrun", "nm", "-gU", library, capture_output=True)
+        if "_OrtGetApiBase" in symbols:
+            raise RuntimeError("Native archive defines ORT; final app must contain one runtime from SwiftPM")
+        exported = {line.split()[-1] for line in symbols.splitlines() if line.split()}
+        required = {"_hymt_load", "_SherpaOnnxCreateOfflineRecognizer",
+                    "_SherpaOnnxCreateLinearResampler", "_SherpaOnnxDestroyLinearResampler",
+                    "_SherpaOnnxLinearResamplerResample", "_SherpaOnnxLinearResamplerResampleFree"}
+        if missing := required - exported:
+            raise RuntimeError(f"Native archive is missing required C entry points: {sorted(missing)}")
+        libraries.append(library)
+
+    simulator = BUILD / "libAuralisNative-simulator.a"
+    run("xcrun", "lipo", "-create", libraries[1], libraries[2], "-output", simulator)
+    product = OUT / "AuralisNative.xcframework"
+    staging = OUT / "AuralisNative.pending.xcframework"
+    if staging.exists():
+        shutil.rmtree(staging)
+    run("xcodebuild", "-create-xcframework", "-library", libraries[0], "-library", simulator, "-output", staging)
+    if product.exists():
+        shutil.rmtree(product)
+    staging.replace(product)
+    (OUT / "provenance.json").write_text(json.dumps({
+        "sherpa_commit": SHERPA_SHA, "llama_commit": LLAMA_SHA,
+        "onnxruntime_version": "1.24.2", "onnxruntime_archive_sha256": ORT_SHA256,
+        "slices": ["iphoneos-arm64", "iphonesimulator-arm64", "iphonesimulator-x86_64"],
+        "runtime_provider": "onnxruntime SwiftPM product (not bundled in AuralisNative)",
+    }, indent=2) + "\n")
+    print(f"Built {product}. Run scripts/verify --scope ios for app linking and tests.")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except (RuntimeError, subprocess.CalledProcessError) as error:
+        print(f"ERROR: {error}", file=sys.stderr)
+        sys.exit(1)

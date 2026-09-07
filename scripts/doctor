@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+"""Auralis doctor: environment diagnostic with concrete fix commands.
+
+Prints one line per probe plus a fix hint for every missing item. Never prints
+credentials or private configuration (only paths and tool versions).
+
+Exit codes: 0 = all required probes pass, 2 = something missing, 4 = bad arguments.
+Passing probes are reported individually; a missing item never hides another result.
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from verify_lib import (  # noqa: E402
+    ArgParser, EXIT_ARGS, EXIT_OK, REPO_ROOT, Reporter, probe_android_sdk, probe_jdk,
+    probe_model_assets, probe_python3, probe_xcode,
+)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = ArgParser(description="Auralis environment doctor")
+    parser.add_argument("--native", action="store_true", help="also check NDK/CMake for native runtime builds")
+    parser.add_argument("--skip-models", action="store_true", help="do not probe local model asset packs")
+    args = parser.parse_args(argv)
+
+    reporter = Reporter()
+    probes: list[tuple[str, object]] = [
+        ("python3", probe_python3),
+        ("jdk17", probe_jdk),
+        ("android-sdk", probe_android_sdk),
+        ("xcode-full", probe_xcode),
+    ]
+    if not args.skip_models:
+        probes.append(("model-assets", probe_model_assets))
+    if args.native:
+        probes.append(("ndk-cmake", probe_ndk_cmake))
+
+    for probe_id, probe in probes:
+        ok, detail, hint = probe()  # type: ignore[operator]
+        reporter.add(_mk(probe_id, ok, detail, hint))
+
+    reporter.print_table()
+    for result in reporter.results:
+        if result.status != "pass":
+            fix = result.reason
+            if fix:
+                print(f"fix [{result.id}]: {fix}")
+    return EXIT_OK if all(r.status == "pass" for r in reporter.results) else 2
+
+
+def _mk(probe_id: str, ok: bool, detail: str, hint: str):
+    from verify_lib import CheckResult
+    return CheckResult(probe_id, "pass" if ok else "blocked", detail if ok else hint or detail)
+
+
+def probe_ndk_cmake():
+    import os
+    import re
+    import subprocess
+    from verify_lib import REPO_ROOT
+    candidates = []
+    env_home = os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT")
+    if env_home:
+        candidates.append(Path(env_home))
+    local_props = REPO_ROOT / "android" / "local.properties"
+    if local_props.is_file():
+        for line in local_props.read_text(encoding="utf-8").splitlines():
+            if line.strip().startswith("sdk.dir="):
+                candidates.append(Path(line.split("=", 1)[1].strip().replace("\\:", ":")))
+    for candidate in candidates:
+        ndk = candidate / "ndk"
+        cmake = candidate / "cmake"
+        has_ndk = ndk.is_dir() and any(ndk.iterdir())
+        has_cmake = cmake.is_dir() and any(cmake.iterdir())
+        if has_ndk and has_cmake:
+            return True, f"NDK + CMake present under {candidate}", ""
+    return False, "NDK/CMake not found under configured SDK", (
+        "Install via Android Studio SDK Manager (NDK side-by-side + CMake) or sdkmanager 'ndk;*' 'cmake;*'")
+
+
+if __name__ == "__main__":
+    sys.exit(main())

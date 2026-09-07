@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "2",
+  "packageId": "asr",
+  "version": "0.1.0",
+  "status": "draft",
+  "source": {
+    "repoId": "x",
+    "upstreamModelId": "x",
+    "licenseSource": "x"
+  },
+  "runtime": {
+    "backend": "onnx",
+    "apiContractVersion": "1",
+    "targetPlatforms": [
+      {
+        "platform": "android"
+      }
+    ],
+    "streaming": false
+  },
+  "capabilities": {
+    "modes": [
+      "transcribe"
+    ],
+    "languages": []
+  },
+  "files": [
+    {
+      "path": "asr/m.onnx",
+      "sizeBytes": null,
+      "sha256": "",
+      "classification": "model"
+    }
+  ],
+  "roles": {
+    "asr": "asr/m.onnx"
+  },
+  "$expectedError": {
+    "code": "empty-hash"
+  }
+}

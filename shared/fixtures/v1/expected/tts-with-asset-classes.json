@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "2",
+  "packageId": "tts",
+  "version": "1.0.0",
+  "status": "draft",
+  "source": {
+    "repoId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+    "revision": null,
+    "upstreamModelId": "elbruno/Qwen3-TTS-12Hz-0.6B-Base-ONNX",
+    "licenseSource": "upstream-repository"
+  },
+  "runtime": {
+    "backend": "onnx",
+    "apiContractVersion": "1",
+    "quantization": "none",
+    "runtimeRevision": null,
+    "executionProviders": [
+      "cpu"
+    ],
+    "streaming": false,
+    "targetPlatforms": [
+      {
+        "platform": "android",
+        "minSdk": 29,
+        "abis": [
+          "arm64-v8a"
+        ]
+      }
+    ]
+  },
+  "capabilities": {
+    "modes": [
+      "synthesize"
+    ],
+    "languages": [],
+    "verification": {}
+  },
+  "files": [
+    {
+      "path": "tts/vocoder.onnx",
+      "sizeBytes": 2713127,
+      "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "classification": "model",
+      "externalData": [
+        "tts/vocoder.onnx.data"
+      ]
+    },
+    {
+      "path": "tts/vocoder.onnx.data",
+      "sizeBytes": 456261632,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "classification": "supportAsset"
+    }
+  ],
+  "roles": {
+    "vocoder": "tts/vocoder.onnx"
+  }
+}

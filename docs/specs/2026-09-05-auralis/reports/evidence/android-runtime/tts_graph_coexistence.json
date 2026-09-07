@@ -1,0 +1,9 @@
+{
+  "order": "sherpa-first-then-real-tts-graph",
+  "graph": "tts/hf/speaker_encoder.onnx (ECAPA-TDNN, mel_spectrogram -> speaker_embedding[1,1024])",
+  "input": "de.wav 16kHz -> 24kHz resample -> 128-dim log-mel (Qwen3TtsProtocol real frontend)",
+  "asr_text_while_coexistent": "Raptorium Bergbau scheint profitierter als Monroe als Reaktion auf die wirtschaftlichen Ausfälle zu sein.",
+  "embedding_finite": true,
+  "vm_rss_kb": 324348,
+  "device": "emulator-5580 API35 arm64"
+}

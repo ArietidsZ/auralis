@@ -1,0 +1,542 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B0000012 /* onnxruntime in Frameworks */ = {isa = PBXBuildFile; productRef = B0000011 /* onnxruntime */; };
+		B0000021 /* AuralisNative.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = B0000020 /* AuralisNative.xcframework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B0000020 /* AuralisNative.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = AuralisNative.xcframework; path = ../.build/ios-native/AuralisNative.xcframework; sourceTree = SOURCE_ROOT; };
+		A1000001 /* DialectInterpreter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DialectInterpreter.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B0000002 /* DialectInterpreterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DialectInterpreterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A10000F1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				Inference/SherpaOnnx/host_smoke.c,
+				Inference/SherpaOnnx/build_host.sh,
+				Inference/SherpaOnnx/module.modulemap,
+			);
+			target = A1000000 /* DialectInterpreter */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		B0000004 /* DialectInterpreterTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DialectInterpreterTests;
+			sourceTree = "<group>";
+		};
+
+		A1000003 /* DialectInterpreter */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A10000F1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			path = DialectInterpreter;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		B0000005 /* Sync shared contracts */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../licenses",
+				"$(SRCROOT)/../LICENSE",
+				"$(SRCROOT)/../THIRD_PARTY_NOTICES.md",
+				"$(SRCROOT)/../shared/dialect-catalog/catalog.json",
+				"$(SRCROOT)/../shared/model-manifests/asr.json",
+				"$(SRCROOT)/../shared/model-manifests/mt.json",
+				"$(SRCROOT)/../shared/model-manifests/tts.json",
+				"$(SRCROOT)/../shared/model-manifests/index.json",
+			);
+			name = "Sync shared contracts";
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(FULL_PRODUCT_NAME)/legal",
+				"$(TARGET_BUILD_DIR)/$(FULL_PRODUCT_NAME)/shared/dialect-catalog/catalog.json",
+				"$(TARGET_BUILD_DIR)/$(FULL_PRODUCT_NAME)/shared/model-manifests/asr.json",
+				"$(TARGET_BUILD_DIR)/$(FULL_PRODUCT_NAME)/shared/model-manifests/mt.json",
+				"$(TARGET_BUILD_DIR)/$(FULL_PRODUCT_NAME)/shared/model-manifests/tts.json",
+				"$(TARGET_BUILD_DIR)/$(FULL_PRODUCT_NAME)/shared/model-manifests/index.json",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nSRC=\"${SRCROOT}/../shared\"\nDEST=\"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/shared\"\nmkdir -p \"${DEST}/dialect-catalog\" \"${DEST}/model-manifests\"\ncp \"${SRC}/dialect-catalog/catalog.json\" \"${DEST}/dialect-catalog/catalog.json\"\ncp \"${SRC}\"/model-manifests/*.json \"${DEST}/model-manifests/\"\nmkdir -p \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/legal\"\ncp \"${SRCROOT}/../licenses/\"* \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/legal/\"\ncp \"${SRCROOT}/../LICENSE\" \"${SRCROOT}/../THIRD_PARTY_NOTICES.md\" \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/legal/\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+		A10000FE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B0000012 /* onnxruntime in Frameworks */,
+				B0000021 /* AuralisNative.xcframework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B0000008 /* Frameworks for tests */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A10000F2 /* Root */ = {
+			isa = PBXGroup;
+			children = (
+				A1000003 /* DialectInterpreter */,
+				B0000004 /* DialectInterpreterTests */,
+				B0000020 /* AuralisNative.xcframework */,
+				A10000F3 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A10000F3 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1000001 /* DialectInterpreter.app */,
+				B0000002 /* DialectInterpreterTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A1000000 /* DialectInterpreter */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000FB /* Build configuration list for PBXNativeTarget "DialectInterpreter" */;
+			buildPhases = (
+				B0000005 /* Sync shared contracts */,
+				A10000FD /* Sources */,
+				A10000FE /* Frameworks */,
+				A10000FF /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A1000003 /* DialectInterpreter */,
+			);
+			name = DialectInterpreter;
+			packageProductDependencies = (
+				B0000011 /* onnxruntime */,
+			);
+			productName = DialectInterpreter;
+			productReference = A1000001 /* DialectInterpreter.app */;
+			productType = "com.apple.product-type.application";
+		};
+		B0000000 /* DialectInterpreterTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B000000C /* Build configuration list for PBXNativeTarget "DialectInterpreterTests" */;
+			buildPhases = (
+				B0000007 /* Sources for tests */,
+				B0000008 /* Frameworks for tests */,
+				B0000009 /* Resources for tests */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B000000A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				B0000004 /* DialectInterpreterTests */,
+			);
+			name = DialectInterpreterTests;
+			packageProductDependencies = (
+			);
+			productName = DialectInterpreterTests;
+			productReference = B0000002 /* DialectInterpreterTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A10000F4 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1620;
+				LastUpgradeCheck = 1620;
+				TargetAttributes = {
+					A1000000 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					B0000000 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = A1000000;
+					};
+				};
+			};
+			buildConfigurationList = A10000F5 /* Build configuration list for PBXProject "DialectInterpreter" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				"zh-Hans",
+			);
+			mainGroup = A10000F2 /* Root */;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				B0000010 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */,
+			);
+			preferredProjectObjectScheme = DialectInterpreter;
+			productRefGroup = A10000F3 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A1000000 /* DialectInterpreter */,
+				B0000000 /* DialectInterpreterTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXContainerItemProxy section */
+		B000000B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000F4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1000000;
+			remoteInfo = DialectInterpreter;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		B000000A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A1000000 /* DialectInterpreter */;
+			targetProxy = B000000B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B0000009 /* Resources for tests */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000FF /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A10000FD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B0000007 /* Sources for tests */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A10000F6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A10000F7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A10000F8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DialectInterpreter/Info.plist;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "需要使用麦克风进行语音识别和声音档案录制";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				OTHER_LDFLAGS = ("$(inherited)", "-lc++", "-framework", Accelerate);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dialect.interpreter;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_INCLUDE_PATHS = ("$(inherited)", "$(SRCROOT)/../android/app/src/main/cpp/hymt_jni", "$(SRCROOT)/DialectInterpreter/Inference/SherpaOnnx");
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A10000F9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DialectInterpreter/Info.plist;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "需要使用麦克风进行语音识别和声音档案录制";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				OTHER_LDFLAGS = ("$(inherited)", "-lc++", "-framework", Accelerate);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dialect.interpreter;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_INCLUDE_PATHS = ("$(inherited)", "$(SRCROOT)/../android/app/src/main/cpp/hymt_jni", "$(SRCROOT)/DialectInterpreter/Inference/SherpaOnnx");
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A10000F5 /* Build configuration list for PBXProject "DialectInterpreter" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000F6 /* Debug */,
+				A10000F7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10000FB /* Build configuration list for PBXNativeTarget "DialectInterpreter" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000F8 /* Debug */,
+				A10000F9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B000000C /* Build configuration list for PBXNativeTarget "DialectInterpreterTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B000000D /* Debug for tests */,
+				B000000E /* Release for tests */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B000000D /* Debug for tests */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dialect.interpreter.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_INCLUDE_PATHS = ("$(inherited)", "$(SRCROOT)/../android/app/src/main/cpp/hymt_jni", "$(SRCROOT)/DialectInterpreter/Inference/SherpaOnnx");
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DialectInterpreter.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DialectInterpreter";
+			};
+			name = Debug;
+		};
+		B000000E /* Release for tests */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dialect.interpreter.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_INCLUDE_PATHS = ("$(inherited)", "$(SRCROOT)/../android/app/src/main/cpp/hymt_jni", "$(SRCROOT)/DialectInterpreter/Inference/SherpaOnnx");
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DialectInterpreter.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DialectInterpreter";
+			};
+			name = Release;
+		};
+/* End XCConfigurationList section */
+
+		B0000010 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/microsoft/onnxruntime-swift-package-manager";
+			requirement = {
+				kind = exactVersion;
+				version = 1.24.2;
+			};
+		};
+		B0000011 /* onnxruntime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B0000010 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */;
+			productName = onnxruntime;
+		};
+	};
+	rootObject = A10000F4 /* Project object */;
+}

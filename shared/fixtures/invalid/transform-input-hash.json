@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "2",
+  "packageId": "mt",
+  "version": "0.0.0",
+  "status": "draft",
+  "source": {
+    "repoId": "AngelSlim/Hy-MT1.5-1.8B-1.25bit-GGUF",
+    "revision": "1bed36c0a8f5a0eddf77987b02ba66d4c268aca2",
+    "upstreamModelId": "AngelSlim/Hy-MT1.5-1.8B-1.25bit",
+    "licenseSource": "License.txt in upstream repository",
+    "transform": {
+      "id": "hymt-stq42-to43-v1",
+      "inputPath": "Hy-MT1.5-1.8B-1.25bit.gguf",
+      "inputSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  },
+  "runtime": {
+    "backend": "gguf-llama-cpp",
+    "apiContractVersion": "1",
+    "quantization": "1.25bit-stq",
+    "runtimeRevision": "1e411d8f5a1e23525fa3265dfb4bd76265465397",
+    "executionProviders": [
+      "cpu"
+    ],
+    "targetPlatforms": [
+      {
+        "platform": "android",
+        "minSdk": 29,
+        "abis": [
+          "arm64-v8a"
+        ]
+      },
+      {
+        "platform": "ios",
+        "minOsVersion": "17.0",
+        "abis": [
+          "arm64"
+        ]
+      }
+    ],
+    "streaming": false,
+    "notes": "The upstream GGUF has legacy STQ type id 42. source.transform records the audited metadata-only 42\u219243 derivation; files pins the runtime artifact, not upstream LFS bytes. Tensor data is unchanged. Native runtime pin is separate from model source revision. Host translation/cancellation executed; device and quality gates remain unverified."
+  },
+  "capabilities": {
+    "modes": [
+      "translate"
+    ],
+    "languages": [],
+    "verification": {}
+  },
+  "files": [
+    {
+      "path": "mt/Hy-MT1.5-1.8B-1.25bit-stq43.gguf",
+      "sizeBytes": 461860704,
+      "sha256": "e42935e2c143be4c579109ef3a096b0b00796af2527eaa09be76331832d4c971",
+      "classification": "model"
+    }
+  ],
+  "roles": {
+    "translator": "mt/Hy-MT1.5-1.8B-1.25bit-stq43.gguf"
+  },
+  "$expectedError": {
+    "code": "bad-value"
+  }
+}

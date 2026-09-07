@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1",
+  "dialects": [
+    {
+      "id": "mandarin",
+      "displayLabel": "普通话",
+      "shortLabel": "普通话",
+      "family": "mandarin",
+      "asrLanguage": "Chinese",
+      "mtLanguage": "Chinese",
+      "ttsLanguageCode": "zh"
+    },
+    {
+      "id": "cantonese",
+      "displayLabel": "粤语",
+      "shortLabel": "粤语",
+      "family": "yue",
+      "asrLanguage": "Cantonese",
+      "mtLanguage": "Chinese",
+      "ttsLanguageCode": "zh"
+    }
+  ],
+  "targetLanguages": [
+    {
+      "id": "zh",
+      "displayLabel": "中文",
+      "asrLanguage": "Chinese",
+      "mtLanguage": "Chinese"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# Validated host ASR environment, Python 3.12 (2026-09-07).
+# No torch/export toolchain required for the official sherpa runner.
+sherpa-onnx==1.13.7
+numpy==2.2.6
+sacrebleu==2.5.1

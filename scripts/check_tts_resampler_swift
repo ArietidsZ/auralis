@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+"""Execute the production Swift resampler helper against the real Sherpa C API.
+
+Synthetic PCM tests DSP/boundaries only, not speaker identity or TTS quality.
+No downloads, model stubs, or replacement resampling implementation.
+"""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+
+HARNESS = r'''
+@main struct Checks {
+    static func rms(_ samples: [Float]) -> Double {
+        sqrt(samples.reduce(0.0) { $0 + Double($1) * Double($1) } / Double(samples.count))
+    }
+    static func rejected(_ label: String, _ operation: () throws -> Void) {
+        do { try operation(); fatalError("accepted invalid input: \(label)") }
+        catch { }
+    }
+    static func main() async throws {
+        var reports: [[String: Any]] = []
+        for rate in [16000, 24000, 44100, 48000] {
+            for count in [1, 2, 1001, rate, rate * 30] {
+                let samples = [Float](repeating: 0, count: count)
+                let output = try Qwen3TtsProtocol.resampleBandlimited(samples, fromRate: rate, toRate: 24000)
+                let expected = (count * 24000 + rate - 1) / rate
+                precondition(output.count == expected && output.allSatisfy { $0 == 0 })
+            }
+            var peaks: [Int] = []
+            for position in [0, 500, 1000] {
+                var impulse = [Float](repeating: 0, count: 1001)
+                impulse[position] = 1
+                let output = try Qwen3TtsProtocol.resampleBandlimited(impulse, fromRate: rate, toRate: 24000)
+                let peak = output.indices.max { abs(output[$0]) < abs(output[$1]) }!
+                let expected = Int((Double(position) * 24000 / Double(rate)).rounded())
+                precondition(peak == expected, "impulse timing mismatch")
+                peaks.append(peak)
+            }
+            let sine = (0..<rate).map { Float(0.5 * sin(2 * Double.pi * 1000 * Double($0) / Double(rate))) }
+            let start = ProcessInfo.processInfo.systemUptime
+            let output = try Qwen3TtsProtocol.resampleBandlimited(sine, fromRate: rate, toRate: 24000)
+            let elapsed = ProcessInfo.processInfo.systemUptime - start
+            let interior = Array(output[512..<(output.count - 512)])
+            let gain = rms(interior) / (0.5 / sqrt(2))
+            precondition(abs(gain - 1) < 0.005, "passband gain changed")
+            reports.append(["inputRate": rate, "outputRate": 24000, "impulsePeaks": peaks,
+                            "sineGain": gain, "secondsForOneSecondPCM": elapsed])
+        }
+        let original: [Float] = [0, -0.0, 0.1234567, -0.875]
+        let identity = try Qwen3TtsProtocol.resampleBandlimited(original, fromRate: 24000, toRate: 24000)
+        precondition(zip(original, identity).allSatisfy { $0.bitPattern == $1.bitPattern })
+        let aliasInput = (0..<48000).map { Float(0.5 * sin(2 * Double.pi * 18000 * Double($0) / 48000)) }
+        let aliasOutput = try Qwen3TtsProtocol.resampleBandlimited(aliasInput, fromRate: 48000, toRate: 24000)
+        let aliasDB = 20 * log10(rms(Array(aliasOutput[512..<(aliasOutput.count - 512)])) / rms(aliasInput))
+        precondition(aliasDB < -80, "insufficient antialias rejection")
+        for rate in [0, -1, 7999, 192001, Int.max] {
+            rejected("input rate") { _ = try Qwen3TtsProtocol.resampleBandlimited([1], fromRate: rate, toRate: 24000) }
+            rejected("output rate") { _ = try Qwen3TtsProtocol.resampleBandlimited([1], fromRate: 16000, toRate: rate) }
+        }
+        rejected("empty") { _ = try Qwen3TtsProtocol.resampleBandlimited([], fromRate: 16000, toRate: 24000) }
+        for value in [Float.nan, Float.infinity, -Float.infinity] {
+            rejected("nonfinite") { _ = try Qwen3TtsProtocol.resampleBandlimited([value], fromRate: 24000, toRate: 24000) }
+        }
+        rejected("over 30 seconds") {
+            _ = try Qwen3TtsProtocol.resampleBandlimited([Float](repeating: 0, count: 480001), fromRate: 16000, toRate: 24000)
+        }
+        rejected("native LCM overflow") {
+            _ = try Qwen3TtsProtocol.resampleBandlimited([1], fromRate: 191999, toRate: 192000)
+        }
+        for rate in [8000, 192000] {
+            let endpoint = try Qwen3TtsProtocol.resampleBandlimited([0, 0], fromRate: rate, toRate: 24000)
+            precondition(endpoint.count == (2 * 24000 + rate - 1) / rate)
+        }
+        rejected("nonfinite native output") {
+            _ = try Qwen3TtsProtocol.resampleBandlimited([Float](repeating: .greatestFiniteMagnitude, count: 512),
+                                                        fromRate: 16000, toRate: 24000)
+        }
+        let cancelled = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try Qwen3TtsProtocol.resampleBandlimited([1], fromRate: 24000, toRate: 24000)
+        }
+        do { _ = try await cancelled.value; fatalError("cancellation swallowed") }
+        catch is CancellationError { }
+        let report: [String: Any] = ["status": "pass", "numZeros": 64, "cutoffRatio": 0.9568718266, "flush": 1,
+            "cases": reports, "aliasRejectionDB": aliasDB, "identityBitExact": true,
+            "invalidInputsRejected": true, "cancellationPropagates": true,
+            "scope": "real native DSP on synthetic PCM; no inference or voice-quality claim"]
+        print(String(data: try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]), encoding: .utf8)!)
+    }
+}
+'''
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--library-dir", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    library = args.library_dir.resolve() / "libsherpa-onnx-c-api.dylib"
+    if sys.platform != "darwin" or not library.is_file():
+        parser.error("macOS and the installed official Sherpa C API dylib are required")
+    output = args.output.resolve()
+    output.mkdir(parents=True, exist_ok=True)
+    source_path = ROOT / "ios/DialectInterpreter/Inference/TtsEngine.swift"
+    source = source_path.read_text()
+    start = source.index("    static func resampleBandlimited(")
+    opening = source.index("{", start)
+    depth, end = 1, opening + 1
+    while depth:
+        depth += (source[end] == "{") - (source[end] == "}")
+        end += 1
+    helper = source[start:end]
+    # Only the error enum and enclosing namespace are supplied by the harness.
+    # The complete production helper is unchanged; all DSP executes in Sherpa.
+    harness = "import Foundation\nimport AuralisSherpaAsr\nenum OrtInferenceFailure: Error { case badInput(String) }\nenum Qwen3TtsProtocol {\n" + helper + "\n}\n" + HARNESS
+    (output / "checks.swift").write_text(harness)
+    symbols = subprocess.check_output(["nm", "-gU", str(library)], text=True)
+    required = ["SherpaOnnxCreateLinearResampler", "SherpaOnnxDestroyLinearResampler",
+                "SherpaOnnxLinearResamplerResample", "SherpaOnnxLinearResamplerResampleFree"]
+    for name in required:
+        if not any(line.endswith(" _" + name) for line in symbols.splitlines()):
+            raise RuntimeError("missing real native symbol: " + name)
+    command = ["swiftc", "-O", "-parse-as-library", "-swift-version", "5",
+               "-module-cache-path", str(output / "module-cache"),
+               "-I", str(ROOT / "ios/DialectInterpreter/Inference/SherpaOnnx"),
+               str(output / "checks.swift"), "-L", str(library.parent), "-lsherpa-onnx-c-api",
+               "-Xlinker", "-rpath", "-Xlinker", str(library.parent), "-o", str(output / "checks")]
+    with (output / "build.log").open("w") as log:
+        subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True)
+    result = subprocess.run([str(output / "checks")], capture_output=True, text=True, check=True)
+    (output / "checks.json").write_text(result.stdout)
+    (output / "runtime.log").write_text(result.stderr)
+    (output / "provenance.json").write_text(json.dumps({"compileCommand": command,
+        "sourceSha256": hashlib.sha256(source_path.read_bytes()).hexdigest(),
+        "helperSha256": hashlib.sha256(helper.encode()).hexdigest(),
+        "library": str(library), "librarySha256": hashlib.sha256(library.read_bytes()).hexdigest(),
+        "requiredSymbols": required}, indent=2) + "\n")
+    print(result.stdout)
+
+
+if __name__ == "__main__":
+    main()

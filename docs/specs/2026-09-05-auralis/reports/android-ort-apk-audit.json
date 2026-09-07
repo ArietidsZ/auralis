@@ -1,0 +1,133 @@
+{
+  "debug": {
+    "sha256": "c631ad3995ed6b0a8e62ae2c1e2e5bf9c6835d57eed01f65c679d221c0963dbc",
+    "bytes": 108466582,
+    "zip_alignment_16k": true,
+    "native": {
+      "lib/arm64-v8a/libandroidx.graphics.path.so": {
+        "sha256": "41e9a793c43a0f4fddb19e33f346bace464f30f888ba7b9eaf96294ea115bfb6",
+        "bytes": 10096,
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ]
+      },
+      "lib/arm64-v8a/libdatastore_shared_counter.so": {
+        "sha256": "d3e48717c9aa147e0ab21063ba0e8e0211cabf8bf40b222640829519edbf58e1",
+        "bytes": 7112,
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ]
+      },
+      "lib/arm64-v8a/libonnxruntime.so": {
+        "sha256": "42f83b3c2370300821942d1f61099689d37bb5e05126fb75849d4cc9dbe356a2",
+        "bytes": 25770888,
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ]
+      },
+      "lib/arm64-v8a/libonnxruntime4j_jni.so": {
+        "sha256": "64ea10bc6fe15413d9e189d4ac31397b6432620728995a25dd204c54afeba5ea",
+        "bytes": 111976,
+        "load_alignments": [
+          16384,
+          16384
+        ]
+      },
+      "lib/arm64-v8a/libsherpa-onnx-jni.so": {
+        "sha256": "64ea14b1016d96c3dde6ceaeadd534122e026559a422a6436e72f710432d9497",
+        "bytes": 2632040,
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ]
+      },
+      "lib/arm64-v8a/libhymt_jni.so": {
+        "sha256": "70d04be59d273254c8db45ef7423d9582b56e65257b59b62a632a6a11d663db5",
+        "bytes": 8063800,
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ]
+      }
+    }
+  },
+  "release": {
+    "sha256": "fc05a8a5ce34937f3fbf3a22d552242b6689fbd3d113fca896f5d9c00113ac76",
+    "bytes": 39936729,
+    "zip_alignment_16k": true,
+    "native": {
+      "lib/arm64-v8a/libandroidx.graphics.path.so": {
+        "sha256": "41e9a793c43a0f4fddb19e33f346bace464f30f888ba7b9eaf96294ea115bfb6",
+        "bytes": 10096,
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ]
+      },
+      "lib/arm64-v8a/libdatastore_shared_counter.so": {
+        "sha256": "d3e48717c9aa147e0ab21063ba0e8e0211cabf8bf40b222640829519edbf58e1",
+        "bytes": 7112,
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ]
+      },
+      "lib/arm64-v8a/libhymt_jni.so": {
+        "sha256": "70d04be59d273254c8db45ef7423d9582b56e65257b59b62a632a6a11d663db5",
+        "bytes": 8063800,
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ]
+      },
+      "lib/arm64-v8a/libonnxruntime.so": {
+        "sha256": "42f83b3c2370300821942d1f61099689d37bb5e05126fb75849d4cc9dbe356a2",
+        "bytes": 25770888,
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ]
+      },
+      "lib/arm64-v8a/libonnxruntime4j_jni.so": {
+        "sha256": "64ea10bc6fe15413d9e189d4ac31397b6432620728995a25dd204c54afeba5ea",
+        "bytes": 111976,
+        "load_alignments": [
+          16384,
+          16384
+        ]
+      },
+      "lib/arm64-v8a/libsherpa-onnx-jni.so": {
+        "sha256": "64ea14b1016d96c3dde6ceaeadd534122e026559a422a6436e72f710432d9497",
+        "bytes": 2632040,
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ]
+      }
+    }
+  },
+  "androidTest": {
+    "sha256": "8d568e0cc58fedc23e26a2f32b703a1af20a637d23a0ca7db8489bb13c5ff842",
+    "bytes": 8871920
+  },
+  "unit_tests": {
+    "tests": 141,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "installed_debug_sha256": "c631ad3995ed6b0a8e62ae2c1e2e5bf9c6835d57eed01f65c679d221c0963dbc"
+}

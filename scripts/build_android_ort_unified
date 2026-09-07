@@ -1,0 +1,184 @@
+#!/usr/bin/env python3
+"""Build/review an isolated single-ORT Android candidate; never changes app packaging."""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import tarfile
+import xml.etree.ElementTree as ET
+import zipfile
+
+ROOT = Path(__file__).resolve().parents[1]
+SHA = "917bed95c8e5c7c18aa4d69fea42e9ef8ef0a60e"
+SOURCE_HASH = "acf539e930283442c4237b7b23a06ebe3bff10cbc00694a4f09a3580e3c10e9e"
+AAR_HASH = "bc461499a735653dff285a6a3477d28b9cfd119a09c7753eaf003426b577f223"
+AAR_SHA1 = "345c83b483a3aa4c5d74564ce0a92c7684794c9a"
+MAVEN = "https://repo.maven.apache.org/maven2/com/microsoft/onnxruntime/onnxruntime-android/1.24.2/"
+
+
+def digest(path: Path, algorithm: str = "sha256") -> str:
+    h = hashlib.new(algorithm)
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def run(*args: object, **kwargs: object) -> str:
+    command = list(map(str, args))
+    print("+", " ".join(command), flush=True)
+    return subprocess.run(command, check=True, text=True, **kwargs).stdout or ""
+
+
+def fetch(path: Path, url: str, expected: str | None = None) -> None:
+    if not path.exists():
+        part = path.with_suffix(path.suffix + ".part")
+        run("curl", "--fail", "--location", "--retry", "3", url, "--output", part)
+        part.replace(path)
+    if expected and digest(path) != expected:
+        raise RuntimeError(f"Checksum mismatch: {path}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--ndk", type=Path, default=os.environ.get("ANDROID_NDK_HOME"))
+    parser.add_argument("--cache", type=Path, default=Path.home() / "Library/Caches/Auralis/android-ort-unified")
+    parser.add_argument("--baseline", action="store_true", help="Keep upstream non-TTS JNI facades for size comparison")
+    args = parser.parse_args()
+    if args.ndk is None:
+        parser.error("Pass --ndk <NDK 27.3.13750724> or set ANDROID_NDK_HOME")
+    ndk = args.ndk.resolve()
+    if "27.3.13750724" not in (ndk / "source.properties").read_text():
+        raise RuntimeError("This prototype pins NDK 27.3.13750724")
+    llvm = next((ndk / "toolchains/llvm/prebuilt").glob("*/bin"))
+    cache = args.cache.resolve()
+    downloads = cache / "downloads"
+    downloads.mkdir(parents=True, exist_ok=True)
+    aar = downloads / "onnxruntime-android-1.24.2.aar"
+    fetch(aar, MAVEN + aar.name, AAR_HASH)
+    fetch(aar.with_suffix(".aar.sha1"), MAVEN + aar.name + ".sha1")
+    if aar.with_suffix(".aar.sha1").read_text().strip() != AAR_SHA1 or digest(aar, "sha1") != AAR_SHA1:
+        raise RuntimeError("Official Maven SHA-1 mismatch")
+    fetch(downloads / "onnxruntime-android-1.24.2.pom", MAVEN + "onnxruntime-android-1.24.2.pom")
+    runtime = cache / "ort-1.24.2"
+    with zipfile.ZipFile(aar) as package:
+        for name in package.namelist():
+            if name.endswith("/"):
+                continue
+            target = runtime / name
+            data = package.read(name)
+            if not target.exists() or target.read_bytes() != data:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(data)
+    sdk = ET.parse(runtime / "AndroidManifest.xml").find("uses-sdk")
+    min_sdk = int(sdk.attrib["{http://schemas.android.com/apk/res/android}minSdkVersion"])
+    api = int(re.search(r"#define ORT_API_VERSION (\d+)", (runtime / "headers/onnxruntime_c_api.h").read_text()).group(1))
+    assert min_sdk == 24 and api == 24
+    archive = downloads / "sherpa-onnx-917bed95.tar.gz"
+    fetch(archive, f"https://codeload.github.com/k2-fsa/sherpa-onnx/tar.gz/{SHA}", SOURCE_HASH)
+    source = cache / "source" / f"sherpa-onnx-{SHA}"
+    with tarfile.open(archive) as package:
+        # Restore the pinned source without touching unchanged mtimes. Skip
+        # unrelated absolute Go example symlinks; native sources are files.
+        for member in package.getmembers():
+            if not member.isfile():
+                continue
+            target = cache / "source" / member.name
+            data = package.extractfile(member).read()
+            if not target.exists() or target.read_bytes() != data:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(data)
+                target.chmod(member.mode & 0o777)
+        jni_cmake = package.extractfile(f"sherpa-onnx-{SHA}/sherpa-onnx/jni/CMakeLists.txt").read().decode()
+    if not args.baseline:
+        bridge = ROOT / "android/app/src/main/cpp/sherpa_jni/auralis_resample_jni.cpp"
+        shutil.copy2(bridge, source / "sherpa-onnx/jni/auralis-resample-jni.cc")
+        jni_cmake += "\n# Auralis: retain offline ASR JNI and one reference resampler.\n"
+        jni_cmake += "set_property(TARGET sherpa-onnx-jni PROPERTY SOURCES\n"
+        jni_cmake += "\n".join(f'  "${{CMAKE_CURRENT_SOURCE_DIR}}/{name}.cc"' for name in ("common", "offline-recognizer", "offline-stream", "auralis-resample-jni"))
+        jni_cmake += "\n)\n"
+        jni_cmake += "target_link_libraries(sherpa-onnx-jni sherpa-onnx-c-api)\n"
+    (source / "sherpa-onnx/jni/CMakeLists.txt").write_text(jni_cmake)
+    env = dict(os.environ, SHERPA_ONNXRUNTIME_INCLUDE_DIR=str(runtime / "headers"),
+               SHERPA_ONNXRUNTIME_LIB_DIR=str(runtime / "jni/arm64-v8a"))
+    build = cache / "build-arm64"
+    with (cache / "configure.log").open("w") as log:
+        run("cmake", "-S", source, "-B", build,
+            f"-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake",
+            "-DANDROID_ABI=arm64-v8a", "-DANDROID_PLATFORM=android-28", "-DANDROID_STL=c++_static",
+            "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON", "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_SHARED_LIBS=OFF",
+            "-DSHERPA_ONNX_ENABLE_JNI=ON", f"-DSHERPA_ONNX_ENABLE_C_API={'OFF' if args.baseline else 'ON'}",
+            "-DSHERPA_ONNX_ENABLE_BINARY=OFF", "-DSHERPA_ONNX_BUILD_C_API_EXAMPLES=OFF",
+            "-DSHERPA_ONNX_ENABLE_PYTHON=OFF", "-DSHERPA_ONNX_ENABLE_TESTS=OFF",
+            "-DSHERPA_ONNX_ENABLE_CHECK=OFF", "-DSHERPA_ONNX_ENABLE_PORTAUDIO=OFF",
+            "-DSHERPA_ONNX_ENABLE_WEBSOCKET=OFF", "-DSHERPA_ONNX_ENABLE_TTS=OFF",
+            "-DSHERPA_ONNX_ENABLE_SPEAKER_DIARIZATION=OFF", env=env, stdout=log, stderr=subprocess.STDOUT)
+    with (cache / "build.log").open("w") as log:
+        run("cmake", "--build", build, "--target", "sherpa-onnx-jni", "-j",
+            os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", "4"), stdout=log, stderr=subprocess.STDOUT)
+    output = cache / ("baseline" if args.baseline else "candidate")
+    output.mkdir(exist_ok=True)
+    (output / "manifest.json").unlink(missing_ok=True)
+    for name in ("configure.log", "build.log"):
+        shutil.copy2(cache / name, output / name)
+    candidate = output / "libsherpa-onnx-jni.so"
+    shutil.copy2(build / "lib/libsherpa-onnx-jni.so", candidate)
+    run(llvm / "llvm-strip", "--strip-unneeded", candidate)
+    evidence = {}
+    for path in (candidate, runtime / "jni/arm64-v8a/libonnxruntime.so", runtime / "jni/arm64-v8a/libonnxruntime4j_jni.so"):
+        elf = run(llvm / "llvm-readelf", "-h", "-l", "-d", "--dyn-syms", "--notes", "--version-info", "-W", path, capture_output=True)
+        (output / (path.name + ".readelf.txt")).write_text(elf)
+        needed = re.findall(r"Shared library: \[(.*?)\]", elf)
+        align = [int(line.split()[-1], 16) for line in elf.splitlines() if line.strip().startswith("LOAD ")]
+        android_note = re.search(r"NT_ANDROID_TYPE_IDENT\s+description data:\s+((?:[0-9a-f]{2}\s+){4})", elf)
+        native_api = int.from_bytes(bytes.fromhex(android_note.group(1)), "little")
+        assert align and min(align) >= 16384, (path, align)
+        assert native_api <= 28
+        soname = re.findall(r"Library soname: \[(.*?)\]", elf)
+        # Microsoft's Java JNI is loaded by filename and has no DT_SONAME.
+        assert soname == [path.name] or (path.name == "libonnxruntime4j_jni.so" and not soname)
+        assert "AArch64" in elf and "VERS_1.24.2" in elf
+        assert "libonnxrtnsher.so" not in elf and "libc++_shared.so" not in needed
+        if path.name != "libonnxruntime.so":
+            assert "libonnxruntime.so" in needed and "UND OrtGetApiBase@VERS_1.24.2" in elf
+        exports = sorted(set(re.findall(r"Java_com_k2fsa_sherpa_onnx\w+", elf)))
+        ort_imports = sorted(set(re.findall(r"UND (Ort\w+@VERS_[\d.]+)", elf)))
+        evidence[path.name] = {"path": str(path), "sha256": digest(path), "bytes": path.stat().st_size,
+                               "needed": needed, "soname": soname[0] if soname else None, "native_android_api": native_api,
+                               "load_alignment": align, "jni_exports": exports, "ort_imports": ort_imports}
+    runtime_elf = (output / "libonnxruntime.so.readelf.txt").read_text()
+    for info in evidence.values():
+        for symbol in info["ort_imports"]:
+            assert symbol.replace("@", "@@") in runtime_elf, symbol
+    exported = set(evidence[candidate.name]["jni_exports"])
+    expected = set()
+    for cls in ("OfflineRecognizer", "OfflineStream"):
+        kotlin = (ROOT / f"android/app/src/main/java/com/k2fsa/sherpa/onnx/{cls}.kt").read_text()
+        expected.update(f"Java_com_k2fsa_sherpa_onnx_{cls}_{method}" for method in re.findall(r"external fun (\w+)\(", kotlin))
+    assert expected <= exported, expected - exported
+    if not args.baseline:
+        expected.add("Java_com_k2fsa_sherpa_onnx_SherpaJni_resample")
+        assert expected <= exported, expected - exported
+        assert all("_OfflineRecognizer_" in symbol or "_OfflineStream_" in symbol or
+                   symbol == "Java_com_k2fsa_sherpa_onnx_SherpaJni_resample" for symbol in exported)
+    manifest = {"sherpa_commit": SHA, "source_archive_sha256": SOURCE_HASH, "aar_sha256": AAR_HASH,
+                "aar_maven_sha1": AAR_SHA1, "ndk": "27.3.13750724", "android_api": 28,
+                "aar_min_sdk": min_sdk, "ort_api": api, "baseline": args.baseline,
+                "ort_c_api_header_sha256": digest(runtime / "headers/onnxruntime_c_api.h"),
+                "required_kotlin_jni_methods": len(expected), "device_execution": "NOT RUN",
+                "jni_cmake_sha256": digest(source / "sherpa-onnx/jni/CMakeLists.txt"), "files": evidence}
+    if not args.baseline:
+        manifest["reference_resampler"] = {"source_sha256": digest(bridge), "num_zeros": 64,
+                                            "cutoff_nyquist_ratio": 0.9568718266, "flush": 1, "maximum_seconds": 30}
+    (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    print(f"Review candidate and ELF evidence in {output}; no app files or devices were changed.")
+
+
+if __name__ == "__main__":
+    main()

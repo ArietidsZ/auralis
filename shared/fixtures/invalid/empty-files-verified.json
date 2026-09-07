@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "2",
+  "packageId": "asr",
+  "version": "1.0.0",
+  "status": "verified",
+  "source": {
+    "repoId": "x",
+    "revision": "0123456789abcdef0123456789abcdef01234567",
+    "upstreamModelId": "x",
+    "licenseSource": "x"
+  },
+  "runtime": {
+    "backend": "onnx",
+    "apiContractVersion": "1",
+    "runtimeRevision": "ort-1.22.0",
+    "targetPlatforms": [
+      {
+        "platform": "android"
+      }
+    ],
+    "streaming": false
+  },
+  "capabilities": {
+    "modes": [
+      "transcribe"
+    ],
+    "languages": [
+      "zh"
+    ],
+    "verification": {
+      "languages": "unverified"
+    }
+  },
+  "files": [],
+  "roles": {},
+  "$expectedError": {
+    "code": "empty-file-set"
+  }
+}

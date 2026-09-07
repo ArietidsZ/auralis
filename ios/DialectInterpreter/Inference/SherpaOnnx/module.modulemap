@@ -1,0 +1,5 @@
+module AuralisSherpaAsr {
+  header "auralis_sherpa_asr.h"
+  header "c-api.h"
+  export *
+}

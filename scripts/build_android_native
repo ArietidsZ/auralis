@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""Build both pinned Android native libraries from source; no model downloads."""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+NDK_VERSION = "27.3.13750724"
+LLAMA_SHA = "1e411d8f5a1e23525fa3265dfb4bd76265465397"
+
+
+class Parser(argparse.ArgumentParser):
+    def error(self, message):
+        self.print_usage(sys.stderr)
+        self.exit(4, f"{self.prog}: error: {message}\n")
+
+
+def run(*args, capture=False):
+    command = list(map(str, args))
+    print("+", " ".join(command), flush=True)
+    return subprocess.run(command, check=True, text=True,
+                          stdout=subprocess.PIPE if capture else None).stdout
+
+
+def sha(path):
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def main():
+    cache_base = (Path.home() / "Library/Caches" if sys.platform == "darwin"
+                  else Path.home() / ".cache") / "Auralis"
+    sdk = os.environ.get("ANDROID_SDK_ROOT") or os.environ.get("ANDROID_HOME")
+    default_ndk = os.environ.get("ANDROID_NDK_HOME") or os.environ.get("ANDROID_NDK_ROOT")
+    if default_ndk is None and sdk:
+        default_ndk = str(Path(sdk) / "ndk" / NDK_VERSION)
+    p = Parser(description=__doc__)
+    p.add_argument("--ndk", type=Path, default=default_ndk)
+    p.add_argument("--cache", type=Path, default=cache_base)
+    p.add_argument("--llama-dir", type=Path, help="optional existing clean checkout at the exact pin")
+    p.add_argument("--output", type=Path, default=ROOT / "android/app/src/main/jniLibs/arm64-v8a")
+    p.add_argument("--jobs", type=int, default=4)
+    a = p.parse_args()
+    if a.jobs < 1:
+        p.error("--jobs must be positive")
+    if a.ndk is None or not (a.ndk / "source.properties").is_file():
+        print(f"BLOCKED: install NDK {NDK_VERSION} and pass --ndk", file=sys.stderr)
+        return 2
+    if NDK_VERSION not in (a.ndk / "source.properties").read_text():
+        p.error(f"this build pins NDK {NDK_VERSION}")
+    a.ndk = a.ndk.resolve()
+    for name in ("cmake", "ninja", "git", "curl"):
+        if shutil.which(name) is None:
+            print(f"BLOCKED: missing build tool {name}", file=sys.stderr)
+            return 2
+    a.cache = a.cache.resolve()
+    native = a.cache / "android-native"
+    native.mkdir(parents=True, exist_ok=True)
+    source = a.llama_dir
+    if source is None:
+        source = native / "source" / ("llama-" + LLAMA_SHA)
+        if not (source / ".git").is_dir():
+            source.mkdir(parents=True, exist_ok=True)
+            run("git", "-C", source, "init")
+            run("git", "-C", source, "fetch", "--depth=1",
+                "https://github.com/ggml-org/llama.cpp.git", LLAMA_SHA)
+            run("git", "-C", source, "checkout", "--detach", "FETCH_HEAD")
+    source = source.resolve()
+    actual = run("git", "-C", source, "rev-parse", "HEAD", capture=True).strip()
+    if actual != LLAMA_SHA:
+        raise RuntimeError(f"llama.cpp checkout is not pinned: {actual}")
+    if run("git", "-C", source, "status", "--porcelain", "--untracked-files=normal", capture=True).strip():
+        raise RuntimeError("llama.cpp checkout has local changes; use a clean pinned checkout")
+
+    sherpa_cache = a.cache / "android-ort-unified"
+    env = dict(os.environ, CMAKE_BUILD_PARALLEL_LEVEL=str(a.jobs))
+    subprocess.run([sys.executable, str(ROOT / "scripts/build_android_ort_unified"),
+                    "--ndk", str(a.ndk), "--cache", str(sherpa_cache)], check=True, env=env)
+    build = native / "build-hymt-arm64"
+    run("cmake", "-S", ROOT / "android/app/src/main/cpp/hymt_jni", "-B", build, "-G", "Ninja",
+        f"-DLLAMA_CPP_DIR={source}",
+        f"-DCMAKE_TOOLCHAIN_FILE={a.ndk}/build/cmake/android.toolchain.cmake",
+        "-DCMAKE_BUILD_TYPE=Release", "-DANDROID_ABI=arm64-v8a", "-DANDROID_PLATFORM=android-28",
+        "-DANDROID_STL=c++_static", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+        "-DGGML_NATIVE=OFF", "-DGGML_METAL=OFF", "-DGGML_BLAS=OFF",
+        "-DLLAMA_OPENSSL=OFF", "-DLLAMA_SUBPROCESS=OFF")
+    run("cmake", "--build", build, "--target", "hymt_jni", "-j", a.jobs)
+    tools = next((a.ndk / "toolchains/llvm/prebuilt").glob("*/bin"))
+    staging = native / "verified"
+    staging.mkdir(exist_ok=True)
+    sources = {
+        "libsherpa-onnx-jni.so": sherpa_cache / "candidate/libsherpa-onnx-jni.so",
+        "libhymt_jni.so": build / "libhymt_jni.so",
+    }
+    records = []
+    for name, artifact in sources.items():
+        target = staging / name
+        shutil.copy2(artifact, target)
+        run(tools / "llvm-strip", "--strip-unneeded", target)
+        elf = run(tools / "llvm-readelf", "-h", "-l", "-d", "--dyn-syms", "-W", target, capture=True)
+        align = [int(line.split()[-1], 16) for line in elf.splitlines() if line.strip().startswith("LOAD ")]
+        if "AArch64" not in elf or not align or min(align) < 16384:
+            raise RuntimeError(f"{name}: requires arm64 and 16 KB LOAD alignment")
+        if "libonnxrtnsher.so" in elf or "libc++_shared.so" in elf:
+            raise RuntimeError(f"{name}: unexpected duplicate runtime dependency")
+        expected = (["nativeCreate", "nativeTranslate", "nativeCancel", "nativeRelease"]
+                    if name == "libhymt_jni.so" else ["SherpaJni_resample", "OfflineRecognizer_newFromFile"])
+        for symbol in expected:
+            if symbol not in elf:
+                raise RuntimeError(f"{name}: missing JNI entry point {symbol}")
+        (staging / (name + ".readelf.txt")).write_text(elf)
+        records.append({"file": name, "sha256": sha(target), "bytes": target.stat().st_size,
+                        "loadAlignment": align,
+                        "needed": re.findall(r"Shared library: \[(.*?)\]", elf)})
+    # Both libraries have built and passed checks before either is installed.
+    a.output.mkdir(parents=True, exist_ok=True)
+    for record in records:
+        target = a.output / record["file"]
+        pending = target.with_suffix(target.suffix + ".pending")
+        shutil.copy2(staging / record["file"], pending)
+        pending.replace(target)
+    (a.output / "native-build.json").write_text(json.dumps({
+        "ndkVersion": NDK_VERSION, "llamaBaseRevision": LLAMA_SHA,
+        "hymtCmakeSha256": sha(ROOT / "android/app/src/main/cpp/hymt_jni/CMakeLists.txt"),
+        "sherpaBuildRecipeSha256": sha(ROOT / "scripts/build_android_ort_unified"),
+        "sherpaResamplerSourceSha256": sha(ROOT / "android/app/src/main/cpp/sherpa_jni/auralis_resample_jni.cpp"),
+        "onnxruntime": "1.24.2 (Gradle AAR supplies the single runtime)",
+        "artifacts": records,
+    }, indent=2) + "\n")
+    print(f"Built and checked both native libraries in {a.output}")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
+        print(f"FAIL: {exc}", file=sys.stderr)
+        raise SystemExit(1)

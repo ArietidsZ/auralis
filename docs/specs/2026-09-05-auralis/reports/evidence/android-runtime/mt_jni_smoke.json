@@ -1,0 +1,14 @@
+{
+  "device": "emulator-5580 API35 arm64 (emulator, not a phone baseline)",
+  "model_file": "Hy-MT1.5-1.8B-1.25bit-stq43.gguf",
+  "model_sha256_device": "e42935e2c143be4c579109ef3a096b0b00796af2527eaa09be76331832d4c971",
+  "runtime_pin": "1e411d8f5a1e23525fa3265dfb4bd76265465397",
+  "short_translation": {
+    "source": "今天天气很好，我们一起去公园散步吧。",
+    "translated": "Today, the weather is great. Let’s go for a walk in the park together.",
+    "latency_ms": 1394,
+    "runtime": "Hy-MT1.5-1.8B-1.25bit"
+  },
+  "cancel_path": "aborted-or-completed-no-crash",
+  "reload_after_release": "ok"
+}

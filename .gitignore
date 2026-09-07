@@ -1,0 +1,47 @@
+.DS_Store
+.ruff_cache/
+.superpowers/
+.worktrees/
+android/.gradle/
+android/.kotlin/
+android/**/build/
+android/local.properties
+convert/.venv/
+convert/__pycache__/
+convert/tests/__pycache__/
+convert/**/*.pyc
+scripts/__pycache__/
+models/
+apps/android/.gradle/
+apps/android/**/build/
+apps/android/local.properties
+tooling/model-convert/.venv/
+tooling/model-convert/__pycache__/
+tooling/model-convert/**/*.pyc
+
+# SwiftPM (core-checks)
+.build/
+.swiftpm/
+
+# Generated native binaries and private release material. Build from pinned source.
+android/app/src/main/jniLibs/**/*.so
+*.keystore
+*.jks
+signing.properties
+:memory:.ses
+__pycache__/
+*.py[cod]
+
+# Provision optional device-test recordings and captured activations locally.
+android/app/src/androidTest/assets/samples/
+android/app/src/androidTest/assets/bf16_cp_inputs/
+
+# Local coordination and raw captured process logs are not release source.
+docs/specs/2026-09-05-auralis/dispatch.json
+docs/specs/2026-09-05-auralis/pause-state.json
+docs/specs/2026-09-05-auralis/reports/continuation-checkpoint-*.md
+docs/specs/2026-09-05-auralis/reports/pause-*.md
+docs/specs/2026-09-05-auralis/reports/release-brief.md
+docs/specs/2026-09-05-auralis/benchmarks/**/*.stdout.txt
+docs/specs/2026-09-05-auralis/benchmarks/**/*.stderr.txt
+docs/specs/2026-09-05-auralis/benchmarks/**/*.log

@@ -1,0 +1,11 @@
+{
+  "order": "sherpa-native-first",
+  "ort_java_version": "1.22.0",
+  "binding_probe_output": [11.0, 22.0, 33.0, 44.0],
+  "libs_after_both_loaded": [libonnxrtnsher.so, libonnxruntime.so, libonnxruntime4j_jni.so, libsherpa-onnx-jni.so],
+  "de_cer": 0.0,
+  "de_text": "Raptorium Bergbau scheint profitierter als Monroe als Reaktion auf die wirtschaftlichen Ausfälle zu sein.",
+  "de_decode_ms": 943,
+  "vm_rss_kb_after_both": 383116,
+  "device": "emulator-5580 API35 arm64"
+}

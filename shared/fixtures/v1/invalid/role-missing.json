@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1",
+  "packageId": "tts",
+  "version": "0.0.0",
+  "sourcePackageName": "x",
+  "files": [
+    {
+      "path": "tts/vocoder.onnx",
+      "sizeBytes": 10,
+      "sha256": null
+    }
+  ],
+  "roles": {
+    "vocoder": "tts/missing.onnx"
+  },
+  "$expectedError": {
+    "code": "role-missing"
+  }
+}

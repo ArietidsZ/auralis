@@ -128,6 +128,6 @@ docs/       构建说明、规格、报告
 
 ## 许可
 
-应用代码：MIT。模型：各自上游许可。第三方 notice：[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。
+应用代码：Apache-2.0。模型：各自上游许可。第三方 notice：[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。
 
 仓库：[ArietidsZ/auralis](https://github.com/ArietidsZ/auralis)。预定 tag 页：[v0.1.0-preview.1](https://github.com/ArietidsZ/auralis/releases/tag/v0.1.0-preview.1)。说明：[docs/releases/v0.1.0-preview.1.md](docs/releases/v0.1.0-preview.1.md)。

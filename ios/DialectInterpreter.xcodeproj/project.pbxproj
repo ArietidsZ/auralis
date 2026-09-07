@@ -56,6 +56,7 @@
 			inputPaths = (
 				"$(SRCROOT)/../licenses",
 				"$(SRCROOT)/../LICENSE",
+				"$(SRCROOT)/../NOTICE",
 				"$(SRCROOT)/../THIRD_PARTY_NOTICES.md",
 				"$(SRCROOT)/../shared/dialect-catalog/catalog.json",
 				"$(SRCROOT)/../shared/model-manifests/asr.json",
@@ -74,7 +75,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\nSRC=\"${SRCROOT}/../shared\"\nDEST=\"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/shared\"\nmkdir -p \"${DEST}/dialect-catalog\" \"${DEST}/model-manifests\"\ncp \"${SRC}/dialect-catalog/catalog.json\" \"${DEST}/dialect-catalog/catalog.json\"\ncp \"${SRC}\"/model-manifests/*.json \"${DEST}/model-manifests/\"\nmkdir -p \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/legal\"\ncp \"${SRCROOT}/../licenses/\"* \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/legal/\"\ncp \"${SRCROOT}/../LICENSE\" \"${SRCROOT}/../THIRD_PARTY_NOTICES.md\" \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/legal/\"\n";
+			shellScript = "set -e\nSRC=\"${SRCROOT}/../shared\"\nDEST=\"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/shared\"\nmkdir -p \"${DEST}/dialect-catalog\" \"${DEST}/model-manifests\"\ncp \"${SRC}/dialect-catalog/catalog.json\" \"${DEST}/dialect-catalog/catalog.json\"\ncp \"${SRC}\"/model-manifests/*.json \"${DEST}/model-manifests/\"\nmkdir -p \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/legal\"\ncp \"${SRCROOT}/../licenses/\"* \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/legal/\"\ncp \"${SRCROOT}/../LICENSE\" \"${SRCROOT}/../NOTICE\" \"${SRCROOT}/../THIRD_PARTY_NOTICES.md\" \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/legal/\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 		A10000FE /* Frameworks */ = {

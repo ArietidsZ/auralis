@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-The project code in this repository is licensed under the MIT license in
+The project code in this repository is licensed under the Apache License, Version 2.0 in
 [`LICENSE`](LICENSE) (Copyright (c) 2026 ArietidsZ). This file covers the
 third-party components that are compiled into or fetched by Auralis, the
 exact revisions used, and the upstream terms for the machine-learning model
@@ -13,7 +13,7 @@ or paraphrased.
 
 The upstream [ONNX Runtime third-party notices](licenses/onnxruntime-ThirdPartyNotices-1.24.2.txt)
 are also included from the official `v1.24.2` source tag, covering its bundled
-dependencies in addition to the top-level MIT license.
+dependencies in addition to ONNX Runtime's MIT license.
 
 ## Compiled components
 
@@ -104,7 +104,7 @@ Google Play Asset Delivery (`asset-delivery` and `asset-delivery-ktx`
 `2.2.2`, with `core-common` `2.0.3`) is governed by the
 [Play Core SDK Terms of Service](https://developer.android.com/guide/playcore#play-core-software-development-kit-terms-of-service)
 and referenced Google APIs terms. These Google SDK components are not
-licensed under this project's MIT license. Their official AARs supply
+relicensed under this project's Apache-2.0 license. Their official AARs supply
 license and third-party notice files, preserved here:
 
 - [Asset Delivery 2.2.2 vendor LICENSE](licenses/google-play-asset-delivery-2.2.2-LICENSE.txt)

@@ -91,6 +91,7 @@ tasks.register<Copy>("syncSharedModelManifests") {
 tasks.register<Sync>("syncThirdPartyNotices") {
     from(rootProject.file("../licenses"))
     from(rootProject.file("../LICENSE"))
+    from(rootProject.file("../NOTICE"))
     from(rootProject.file("../THIRD_PARTY_NOTICES.md"))
     into(layout.buildDirectory.dir("generated/sharedAssets/legal"))
 }

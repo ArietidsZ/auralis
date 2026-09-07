@@ -128,6 +128,6 @@ docs/       build notes, specs, reports
 
 ## License
 
-Application code: MIT. Models: their upstream licenses. Third-party notices: [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+Application code: Apache-2.0. Models: their upstream licenses. Third-party notices: [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 Repository: [ArietidsZ/auralis](https://github.com/ArietidsZ/auralis). Planned tag page: [v0.1.0-preview.1](https://github.com/ArietidsZ/auralis/releases/tag/v0.1.0-preview.1). Notes: [docs/releases/v0.1.0-preview.1.md](docs/releases/v0.1.0-preview.1.md).

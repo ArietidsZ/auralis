@@ -20,7 +20,7 @@ import kotlin.math.sin
 /** Same initialized track and PCM: changing only startup threshold starts it. */
 @RunWith(AndroidJUnit4::class)
 class AudioStartThresholdTest {
-    @Test fun shortPcmStartsWhenThresholdIsLowered() = runBlocking {
+    @Test fun shortPcmStartsWhenThresholdIsLowered() = runBlocking<Unit> {
         check(Build.VERSION.SDK_INT >= 31) { "This API31+ comparison requires a matching test device" }
         ActivityScenario.launch(MainActivity::class.java).use {
             val minimum = AudioTrack.getMinBufferSize(24000, AudioFormat.CHANNEL_OUT_MONO,

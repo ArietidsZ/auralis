@@ -34,9 +34,7 @@ struct SharedContractsTests {
 
     @Test func mtManifestPinsUpstreamRevision() throws {
         let manifest = try SharedContracts.loadManifest(packageId: "mt")
-        // Immutable-source rule: the MODEL repo revision must be a 40-char
-        // commit SHA. It is NOT a runtime ref; runtime.runtimeRevision is a
-        // separate pin and stays null until a runtime is actually verified.
+        // Source and runtime revisions identify different repositories.
         #expect(manifest.sourceRevision != nil,
                 "MT manifest must pin an upstream revision (spec 01 C02)")
         #expect(manifest.roles["translator"] != nil)
@@ -48,7 +46,7 @@ struct SharedContractsTests {
         // The repository ships draft manifests with no model artifacts:
         // reporting anything but unavailable/not-installed would be a lie.
         switch manager.status.mt {
-        case .manifestUnavailable, .notInstalled, .filesMissing:
+        case .manifestUnavailable, .notInstalled, .filesMissing, .runtimeUnavailable:
             break
         case .ready, .error:
             Issue.record("draft manifest must never evaluate as ready")
@@ -58,10 +56,10 @@ struct SharedContractsTests {
     @Test func mtEngineNeverPassesThrough() async {
         let engine = HyMtTranslationEngine()
         let availability = await engine.isAvailable
-        #expect(!availability, "without a linked native GGUF runtime, MT is unavailable")
+        #expect(!availability, "without an installed GGUF model, MT is unavailable")
         do {
             _ = try await engine.translate(text: "你好", sourceLanguage: "Chinese", targetLanguage: "English")
-            Issue.record("translate must throw when the MT runtime is unavailable; passing text through is forbidden")
+            Issue.record("translate must throw when the MT model is unavailable; passing text through is forbidden")
         } catch {
             // Expected: a typed failure, not a fake translation.
         }

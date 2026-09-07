@@ -41,10 +41,7 @@ class AudioPlayer(private val context: Context) : AudioPlayback {
 
 
     private class Run(val rate: Int, val epoch: Long) {
-        /** Acquired lazily on the first chunk: a producer that never writes
-         * must not create-or-flush an AudioTrack (an admission flush with no
-         * subsequent render wedges the mixer clock on this AVD; observed
-         * 2026-09-07, see AudioTrackHeadDiagnostic evidence). */
+        /** Allocate audio resources only when a producer supplies real PCM. */
         var track: AudioTrack? = null
         val stopped = AtomicBoolean(false)
         @Volatile var interruption: String? = null
@@ -93,9 +90,7 @@ class AudioPlayer(private val context: Context) : AudioPlayback {
                     if (epoch != stopEpoch.get()) throw CancellationException("Playback stopped before admission")
                     Run(sampleRate, epoch).also { activeRun = it }
                 }
-                // NOTE: play() is deliberately NOT called before the first
-                // write — play() on an empty buffer wedges the track clock on
-                // this AVD (write-then-play is the verified-advancing order).
+                // Prime real PCM before starting the output and claiming focus.
                 var completed = false
                 try {
                     checkActive(run)
@@ -136,9 +131,6 @@ class AudioPlayer(private val context: Context) : AudioPlayback {
                             // Pause + flush discard all unrendered PCM, so no
                             // stale audio can ever play; the track itself is
                             // kept for the serial reuse path (openTrackLocked).
-                            // Never pause()/flush() a track that never reached
-                            // PLAYING with data — that wedges the mixer clock
-                            // on this AVD (observed 2026-09-07).
                             run.track?.let { track ->
                                 if (!completed || !run.started) {
                                     runCatching { track.release() }
@@ -278,9 +270,7 @@ class AudioPlayer(private val context: Context) : AudioPlayback {
     }
 
     private fun pauseAndFlush(run: Run) {
-        // Pausing a track that never reached PLAYING with data wedges the mixer
-        // clock for that track and everything after it on this AVD (observed
-        // 2026-09-07); a never-started track has nothing queued to discard.
+        // Inactive tracks are cleaned up by the owning playback coroutine.
         if (!run.started) return
         synchronized(trackLock) {
             if (activeRun === run) {

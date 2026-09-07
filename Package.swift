@@ -9,11 +9,9 @@ import PackageDescription
 
 let package = Package(
     name: "AuralisCore",
-    // Explicit minimum: without it, Xcode 16.4's SwiftPM defaults the host
-    // build to macosx10.13, where CryptoKit (10.15+) and back-deployed
-    // Concurrency availability checks fail the whole `swift build` with exit 1
-    // (CLT toolchains happen to default higher and hide the bug locally).
-    platforms: [.macOS(.v10_15)],
+    // Core tools use CryptoKit and FileHandle.read(upToCount:). Set a host
+    // minimum explicitly instead of inheriting a toolchain-dependent target.
+    platforms: [.macOS(.v11)],
     products: [.executable(name: "core-checks", targets: ["CoreChecks"])],
     targets: [
         .target(name: "AuralisCore", path: "ios/DialectInterpreter/Data"),

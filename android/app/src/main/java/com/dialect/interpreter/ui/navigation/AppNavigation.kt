@@ -1,13 +1,19 @@
 package com.dialect.interpreter.ui.navigation
 
+import android.app.Activity
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.dialect.interpreter.ui.screens.InterpretScreen
 import com.dialect.interpreter.ui.screens.SetupScreen
@@ -31,6 +37,18 @@ private const val TRANSITION_MS = 220
 @Composable
 fun AppNavigation(reduceMotion: Boolean = false) {
     val navController = rememberNavController()
+    val route = navController.currentBackStackEntryAsState().value?.destination?.route
+        ?: AppRoutes.INTERPRET
+    val darkTheme = isSystemInDarkTheme()
+    val view = LocalView.current
+    SideEffect {
+        (view.context as? Activity)?.window?.let { window ->
+            // Interpretation has an always-dark header; other screens follow
+            // the system surface. Match system icons to the visible surface.
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars =
+                route != AppRoutes.INTERPRET && !darkTheme
+        }
+    }
 
     NavHost(
         navController = navController,

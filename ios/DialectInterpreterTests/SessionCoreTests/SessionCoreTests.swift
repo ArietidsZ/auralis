@@ -375,13 +375,17 @@ enum OrchestratorTests {
     }
 
     static func queueOverflowDropsVisibly(_ f: FailBox) async {
-        let (s, _) = makeSession()
-        s.asr.transcribeDelayMs = 150  // keep the worker busy
+        let (s, consumer) = makeSession()
+        var gate: AsyncStream<Void>.Continuation!
+        s.asr.transcribeGate = AsyncStream { gate = $0 }
+        defer { gate.finish(); consumer.cancel() }
         s.orchestrator.start()
-        _ = await waitUntil { s.orchestrator.state == .listening }
+        f.expectTrue(await waitUntil { s.capture.startCount == 1 }, "capture is ready")
 
-        feedEndedUtterance(s.capture)  // taken by the worker
-        try? await Task.sleep(for: .milliseconds(30))
+        feedEndedUtterance(s.capture)
+        f.expectTrue(await waitUntil { s.asr.transcribeCount == 1 },
+                     "first recognition is admitted and held at the gate")
+        // The worker cannot consume another job until recognition is released.
         feedEndedUtterance(s.capture)  // buffer 1/2
         feedEndedUtterance(s.capture)  // buffer 2/2
         feedEndedUtterance(s.capture)  // dropped
@@ -390,9 +394,13 @@ enum OrchestratorTests {
             s.recorder.turns.contains { $0.status == .dropped }
         }
         f.expectTrue(droppedSeen, "dropped turn is a visible event")
+        f.expectEqual(s.asr.transcribeCount, 1, "worker stays occupied during overflow")
+        f.expectEqual(s.orchestrator.telemetry.utteranceCount, 3, "one active plus two queued turns")
         f.expectEqual(s.orchestrator.telemetry.droppedUtterances, 1, "telemetry drop counter")
         s.orchestrator.stop()
-        _ = await waitUntil { s.orchestrator.state == .idle }
+        gate.finish()
+        f.expectTrue(await waitUntil { s.orchestrator.state == .idle },
+                     "stop joins recognition and discards the queued turns")
     }
 
     static func stopDuringLoadNeverOpensMicAndRestartWorks(_ f: FailBox) async {

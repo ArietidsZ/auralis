@@ -19,6 +19,8 @@ final class FakeRecognition: RecognitionStage {
     var loadError: Error?
     var loadDelayMs: UInt64 = 0
     var transcribeDelayMs: UInt64 = 0
+    /// Finishing the stream releases recognition; task cancellation also wakes it.
+    var transcribeGate: AsyncStream<Void>?
     private(set) var isLoaded = false
     private(set) var loadCount = 0
     private(set) var releaseCount = 0
@@ -35,6 +37,10 @@ final class FakeRecognition: RecognitionStage {
     func transcribe(audioData: [Float], languageHint: String?) async throws -> RecognitionOutput {
         transcribeCount += 1
         lastLanguageHint = languageHint
+        if let transcribeGate {
+            for await _ in transcribeGate {}
+            try Task.checkCancellation()
+        }
         if transcribeDelayMs > 0 { try await Task.sleep(for: .milliseconds(transcribeDelayMs)) }
         guard isLoaded else { throw TestError.asrDown }
         return result

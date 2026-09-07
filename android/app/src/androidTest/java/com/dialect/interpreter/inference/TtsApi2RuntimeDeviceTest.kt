@@ -249,10 +249,29 @@ class TtsApi2RuntimeDeviceTest {
         val fx = AsrDeviceFixtures
         val dir = externalDir().apply { mkdirs() }
         val report = JSONObject().put("device", "emulator-5580 API35 arm64")
-        val runtime = openRuntime()
+        fun save(stage: String) {
+            report.put("stage", stage)
+            File(dir, "api2_lifecycle.json").writeText(report.toString(2))
+        }
+        val reference = readRawF32(File(refsDir(), "121-reference24.f32"))
+        // Budget is immutable per engine. Finish and release the tight engine
+        // before opening the normal one; two complete model sets exceed the
+        // test device's memory and are unrelated to turn-state recovery.
         val tight = openRuntime(maxFrames = 3)
         try {
-            val reference = readRawF32(File(refsDir(), "121-reference24.f32"))
+            val xvectorTight = tight.prepareReference(reference, inputSampleRate = 24000)
+            save("tight-prepared")
+            try {
+                tight.synthesizePrepared(xvectorTight, TEXT_ZH, "zh")
+                fail("budget exhaustion must fail")
+            } catch (expected: ModelProtocol.UnsupportedModelException) {
+                report.put("no_eos", JSONObject().put("error", expected.message))
+            }
+        } finally { tight.release() }
+        save("tight-released")
+
+        val runtime = openRuntime()
+        try {
             val icl = runtime.prepareReference(reference, inputSampleRate = 24000,
                 referenceText = SPEAKERS[0].refText)
             val xvector = runtime.prepareReference(reference, inputSampleRate = 24000)
@@ -263,21 +282,13 @@ class TtsApi2RuntimeDeviceTest {
             report.put("baseline", JSONObject()
                 .put("frames", baseline.audioData.size / Qwen3TtsProtocol.SAMPLES_PER_FRAME)
                 .put("float_sha256", baselineSha))
+            save("baseline")
 
-            // --- no-EOS: budget exhaustion is a failure, then recovery -------
-            // tight is its own engine instance: prepared refs do not cross
-            // engines (binding contract), so it prepares its own xvector.
-            val xvectorTight = tight.prepareReference(reference, inputSampleRate = 24000)
-            try {
-                tight.synthesizePrepared(xvectorTight, TEXT_ZH, "zh")
-                fail("budget exhaustion must fail")
-            } catch (expected: ModelProtocol.UnsupportedModelException) {
-                report.put("no_eos", JSONObject().put("error", expected.message))
-            }
-            // Recovery runs on the full-budget runtime: the failed turn on
-            // tight must not poison any engine.
+            // Normal-budget synthesis after recreating the runtime. Same-engine
+            // recovery is exercised below for cancellation and sink failure.
             val afterNoEos = runtime.synthesizePrepared(xvector, TEXT_ZH, "zh")
             report.put("after_no_eos", JSONObject().put("float_sha256", sha256Wav(afterNoEos.audioData)))
+            save("after-no-eos-recreation")
 
             // --- cancel mid-generation (after the first delivered chunk) -----
             val firstChunk = CompletableDeferred<Unit>()
@@ -290,6 +301,7 @@ class TtsApi2RuntimeDeviceTest {
             withTimeout(120_000) { firstChunk.await() }
             job.cancelAndJoin()
             report.put("cancel", "first chunk delivered; turn cancelled; no result returned")
+            save("cancelled")
 
             // --- sink failure: exception propagates, snapshot stays clean ----
             var sinkCalls = 0
@@ -309,6 +321,7 @@ class TtsApi2RuntimeDeviceTest {
                 .put("float_sha256", afterSinkSha)
                 .put("identical_to_baseline", afterSinkSha == baselineSha))
             assertEquals("snapshot must be unpolluted after sink failure", baselineSha, afterSinkSha)
+            save("sink-recovered")
 
             // --- state isolation: alternating voices never cross -------------
             val other = runtime.prepareReference(
@@ -322,10 +335,9 @@ class TtsApi2RuntimeDeviceTest {
                 .put("again_sha256", againSha)
                 .put("identical_to_baseline", againSha == baselineSha))
             assertEquals("state must not cross utterances/voices", baselineSha, againSha)
-            File(dir, "api2_lifecycle.json").writeText(report.toString(2))
+            save("complete")
         } finally {
             runtime.release()
-            tight.release()
         }
     }
 

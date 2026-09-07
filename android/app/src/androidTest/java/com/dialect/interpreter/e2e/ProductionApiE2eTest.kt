@@ -96,7 +96,8 @@ class ProductionApiE2eTest {
         "/storage/emulated/0/Android/data/com.dialect.interpreter/files/api2_e2e/$case-$runId")
         .apply { mkdirs() }
 
-    /** Real 16 kHz reference PCM from the pushed fixture (speaker 121). */
+    /** Real reference PCM from the provisioned fixture, resampled to 16 kHz.
+     * Profile labels do not determine speaker identity; the PCM does. */
     private fun reference16k(): FloatArray {
         val f24 = File(context().getExternalFilesDir(null), "e2e/reference24.f32")
         val raw = f24.readBytes()

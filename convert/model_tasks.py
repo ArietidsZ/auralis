@@ -6,7 +6,6 @@ this host; they do not promote a manifest or certify a physical device.
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import math
 import os
@@ -19,6 +18,9 @@ from pathlib import Path
 from asr_runner import RunnerError, cer, edit_distance, load_wav
 from manifest_contract import ContractError, unique_json_keys
 from tts_runner import normalize_language, API2_GRAPHS, API2_HASHED_FILES
+# One shared single-pass SHA-256 reader; the file_hash spelling stays for
+# scripts/check_asr_swift, which imports it from here.
+from fetch_model import sha256_of as file_hash  # noqa: E402
 
 CONVERT = Path(__file__).resolve().parent
 
@@ -69,14 +71,6 @@ class TaskError(Exception):
     def __init__(self, status: str, message: str):
         super().__init__(message)
         self.status = status
-
-
-def file_hash(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for chunk in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def finite_number(value, name: str, minimum: float = 0) -> float:

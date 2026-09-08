@@ -42,6 +42,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from file_integrity import sha256_of as sha256_file
+
 SAMPLE_RATE = 24000
 SAMPLES_PER_FRAME = 1920  # 12 Hz codec -> 24 kHz PCM
 NUM_CODEBOOKS = 16        # RVQ groups sent to the vocoder
@@ -777,14 +779,6 @@ class StreamingVocoder:
         if not self.audio:
             raise RuntimeError("vocoder produced no target audio")
         return np.concatenate(self.audio)
-
-
-def sha256_file(path: Path) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(4 * 1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def compute_model_hashes(model_dir: Path, files=HASHED_FILES) -> dict:

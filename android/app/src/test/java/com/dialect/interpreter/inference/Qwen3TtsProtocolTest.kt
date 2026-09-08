@@ -9,7 +9,14 @@ import org.junit.Test
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.exp
+import kotlin.math.ln
+import kotlin.math.max
+import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 /**
@@ -439,6 +446,7 @@ class Qwen3TtsProtocolTest {
         assertEquals("english", Qwen3TtsProtocol.languageCodeToConfigKey["en"])
     }
 
+    @Test
     fun `code flattening is group-major for the vocoder`() {
         // frames f=0..2 × groups g=0..1; value encodes (g, f) to catch swaps.
         val frames = listOf(intArrayOf(0, 1), intArrayOf(10, 11), intArrayOf(20, 21))
@@ -453,5 +461,486 @@ class Qwen3TtsProtocolTest {
         assertThrows(IllegalArgumentException::class.java) {
             Qwen3TtsProtocol.flattenCodesGroupMajor(frames, numCodebooks = 2)
         }
+    }
+
+    // ---- Frozen 2026-09-08 baseline oracles ---------------------------------
+    // Bit-exact copies of the pre-rework implementations. The new code must
+    // reproduce these value for value (same tokens for the same RNG stream);
+    // they are duplicated here on purpose so a future change cannot silently
+    // move both sides. Baseline: v0.1.0-preview.1 (7e2cb57).
+
+    private fun legacySampleGroup0(
+        logitsLast: FloatArray,
+        cfg: Qwen3TtsBundleConfig,
+        temperature: Float,
+        topK: Int,
+        repetitionPenalty: Float,
+        generated: List<Int>,
+        random: Random,
+        suppressEos: Boolean,
+    ): Int {
+        val vocab = cfg.talkerVocab
+        require(vocab > 0 && logitsLast.size >= vocab) { "Invalid talker logits shape" }
+        require(repetitionPenalty.isFinite() && repetitionPenalty > 0f) { "Invalid repetition penalty" }
+        val probs = FloatArray(vocab)
+        System.arraycopy(logitsLast, logitsLast.size - vocab, probs, 0, vocab)
+        require(probs.all { it.isFinite() || it == Float.NEGATIVE_INFINITY }) { "Invalid talker logits" }
+        if (suppressEos) probs[cfg.codecEosId] = Float.NEGATIVE_INFINITY
+        for (token in generated.toSet()) {
+            require(token in probs.indices) { "Invalid generated codec token" }
+            if (probs[token] > 0f) probs[token] /= repetitionPenalty else probs[token] *= repetitionPenalty
+        }
+        for (i in cfg.cpVocab until vocab) {
+            if (i != cfg.codecEosId) probs[i] = Float.NEGATIVE_INFINITY
+        }
+        return legacySampleFromLogits(probs, temperature, topK, random)
+    }
+
+    private fun legacySampleCodePredictor(
+        logitsLast: FloatArray,
+        cfg: Qwen3TtsBundleConfig,
+        temperature: Float,
+        topK: Int,
+        random: Random,
+    ): Int {
+        val vocab = cfg.cpVocab
+        require(vocab > 0 && logitsLast.size >= vocab) { "Invalid code-predictor logits shape" }
+        val probs = FloatArray(vocab)
+        System.arraycopy(logitsLast, logitsLast.size - vocab, probs, 0, vocab)
+        return legacySampleFromLogits(probs, temperature, topK, random)
+    }
+
+    private fun legacySampleFromLogits(
+        probs: FloatArray,
+        temperature: Float,
+        topK: Int,
+        random: Random,
+    ): Int {
+        require(temperature.isFinite() && temperature >= 0f) { "Invalid sampling temperature" }
+        require(topK >= 0) { "topK must be nonnegative (0 disables filtering)" }
+        require(probs.isNotEmpty() && probs.all { it.isFinite() || it == Float.NEGATIVE_INFINITY }) {
+            "Sampling logits contain NaN or positive infinity"
+        }
+        var best = 0
+        for (i in probs.indices) if (probs[i] > probs[best]) best = i
+        val maxLogit = probs[best]
+        require(maxLogit.isFinite()) { "No finite sampling candidate remains" }
+        if (temperature == 0f || topK == 1) return best
+        if (topK in 1 until probs.size) {
+            val threshold = probs.copyOf().sortedDescending()[topK - 1]
+            for (i in probs.indices) if (probs[i] < threshold) probs[i] = Float.NEGATIVE_INFINITY
+        }
+        val weights = DoubleArray(probs.size) {
+            exp((probs[it].toDouble() - maxLogit.toDouble()) / temperature.toDouble())
+        }
+        val sum = weights.sum()
+        check(sum.isFinite() && sum > 0.0) { "Invalid sampling probability mass" }
+        val r = random.nextDouble() * sum
+        var cum = 0.0
+        for (i in weights.indices) {
+            cum += weights[i]
+            if (r < cum) return i
+        }
+        return weights.indices.last { weights[it] > 0.0 }
+    }
+
+    private fun legacyLogMelSpectrogram(audio: FloatArray, sr: Int): Qwen3TtsProtocol.LogMelResult {
+        val nFft = 1024
+        val hop = 256
+        val nMels = 128
+        val pad = (nFft - hop) / 2
+        val padded = FloatArray(audio.size + 2 * pad)
+        for (i in padded.indices) {
+            padded[i] = audio[Qwen3TtsProtocol.reflectIndex(i - pad, audio.size)]
+        }
+        val window = FloatArray(nFft) { (0.5 - 0.5 * cos(2.0 * PI * it / nFft)).toFloat() }
+        val frames = 1 + (padded.size - nFft) / hop
+        val basis = Qwen3TtsProtocol.buildMelFilterbank(sr, nFft, nMels, 0.0, sr / 2.0)
+        val out = FloatArray(frames * nMels)
+        val re = DoubleArray(nFft)
+        val im = DoubleArray(nFft)
+        val nFreqs = nFft / 2 + 1
+        for (f in 0 until frames) {
+            val start = f * hop
+            for (i in 0 until nFft) {
+                re[i] = (padded[start + i] * window[i]).toDouble()
+                im[i] = 0.0
+            }
+            legacyFftRadix2(re, im)
+            for (m in 0 until nMels) {
+                var energy = 0.0
+                for (k in 0 until nFreqs) {
+                    val mag = sqrt(re[k] * re[k] + im[k] * im[k] + 1e-9)
+                    energy += basis[m * nFreqs + k] * mag
+                }
+                out[f * nMels + m] = max(energy, 1e-5).let(::ln).toFloat()
+            }
+        }
+        return Qwen3TtsProtocol.LogMelResult(out, frames)
+    }
+
+    private fun legacyFftRadix2(re: DoubleArray, im: DoubleArray) {
+        val n = re.size
+        val bits = Integer.numberOfTrailingZeros(n)
+        for (i in 0 until n) {
+            var x = i
+            var j = 0
+            repeat(bits) { j = (j shl 1) or (x and 1); x = x shr 1 }
+            if (j > i) {
+                var t = re[i]; re[i] = re[j]; re[j] = t
+                t = im[i]; im[i] = im[j]; im[j] = t
+            }
+        }
+        var size = 2
+        while (size <= n) {
+            val half = size / 2
+            val angle = -2.0 * PI / size
+            for (i in 0 until n step size) {
+                for (k in 0 until half) {
+                    val c = cos(angle * k)
+                    val s = sin(angle * k)
+                    val tReal = c * re[i + k + half] - s * im[i + k + half]
+                    val tImag = s * re[i + k + half] + c * im[i + k + half]
+                    re[i + k + half] = re[i + k] - tReal
+                    im[i + k + half] = im[i + k] - tImag
+                    re[i + k] += tReal
+                    im[i + k] += tImag
+                }
+            }
+            size *= 2
+        }
+    }
+
+    /** Adversarial logit distributions; deterministic per (name, vocab, seed). */
+    private fun distribution(name: String, vocab: Int, seed: Long): FloatArray = when (name) {
+        "uniform" -> FloatArray(vocab) { Random(seed + it).nextFloat() * 8f - 4f }
+        // Quantized values force ties at and around every topK boundary.
+        "quantized-duplicates" -> FloatArray(vocab) {
+            listOf(-3f, 0.5f, 0.5f, 2f, 2f, 2f, 7f)[Random(seed + it).nextInt(7)]
+        }
+        "few-finite" -> FloatArray(vocab) {
+            if (Random(seed + it).nextInt(100) < 3) Random(seed + it * 7).nextFloat() * 4f
+            else Float.NEGATIVE_INFINITY
+        }
+        "all-equal" -> FloatArray(vocab) { 1.5f }
+        else -> throw AssertionError(name)
+    }
+
+    @Test
+    fun `group0 sampler is value-identical to frozen baseline across topK and ties`() {
+        val cfg = testConfig()
+        val vocab = cfg.talkerVocab
+        for (dist in listOf("uniform", "quantized-duplicates", "few-finite", "all-equal")) {
+            for (topK in intArrayOf(0, 1, 2, 50, 51, vocab - 1, vocab)) {
+                val logits = distribution(dist, vocab, seed = 1000L + topK)
+                val rngNew = Random(777)
+                val rngLegacy = Random(777)
+                val generatedNew = ArrayList<Int>()
+                val generatedLegacy = ArrayList<Int>()
+                for (step in 0 until 150) {
+                    val suppress = step < 2
+                    val a = Qwen3TtsProtocol.sampleGroup0(
+                        logits, cfg, 0.9f, topK, 1.05f, generatedNew, rngNew, suppress)
+                    val b = legacySampleGroup0(
+                        logits, cfg, 0.9f, topK, 1.05f, generatedLegacy, rngLegacy, suppress)
+                    assertEquals("dist=$dist topK=$topK step=$step", b, a)
+                    if (a == cfg.codecEosId) break
+                    generatedNew.add(a)
+                    generatedLegacy.add(b)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `code predictor sampler is value-identical to frozen baseline across topK and ties`() {
+        val cfg = testConfig()
+        val vocab = cfg.cpVocab
+        for (dist in listOf("uniform", "quantized-duplicates", "few-finite", "all-equal")) {
+            for (topK in intArrayOf(0, 1, 2, 50, 51, vocab - 1, vocab)) {
+                val logits = distribution(dist, vocab, seed = 2000L + topK)
+                val rngNew = Random(555)
+                val rngLegacy = Random(555)
+                for (step in 0 until 200) {
+                    val a = Qwen3TtsProtocol.sampleCodePredictor(logits, cfg, 0.9f, topK, rngNew)
+                    val b = legacySampleCodePredictor(logits, cfg, 0.9f, topK, rngLegacy)
+                    assertEquals("dist=$dist topK=$topK step=$step", b, a)
+                }
+            }
+        }
+    }
+
+    /** Bit-exact assertion, except either zero sign may stand in for the
+     *  other: the mask consumer `x < threshold` treats ±0.0 identically and
+     *  the heap's IEEE comparisons do not distinguish them. */
+    private fun assertSortedThreshold(expected: Float, actual: Float, message: String) {
+        assertTrue(
+            "$message expected=$expected (0x${Integer.toHexString(java.lang.Float.floatToRawIntBits(expected))}) " +
+                "actual=$actual (0x${Integer.toHexString(java.lang.Float.floatToRawIntBits(actual))})",
+            java.lang.Float.floatToRawIntBits(expected) == java.lang.Float.floatToRawIntBits(actual) ||
+                (expected == 0f && actual == 0f))
+    }
+
+    @Test
+    fun `kth largest matches the sorted multiset reference exactly`() {
+        val rng = Random(2024)
+        val sizes = intArrayOf(1, 2, 3, 5, 8, 17, 64, 257)
+        for (size in sizes) {
+            for (trial in 0 until 6) {
+                val values = when (trial) {
+                    0 -> FloatArray(size) { rng.nextFloat() * 20f - 10f }
+                    1 -> FloatArray(size) { if (rng.nextBoolean()) 1f else 2f }
+                    2 -> FloatArray(size) { 0f }
+                    3 -> FloatArray(size).also { if (size > 0) it[rng.nextInt(size)] = 7f }
+                    4 -> FloatArray(size) {
+                        if (rng.nextInt(4) == 0) Float.NEGATIVE_INFINITY else rng.nextFloat()
+                    }
+                    else -> FloatArray(size) {
+                        when (rng.nextInt(5)) {
+                            0 -> -0f
+                            1 -> 0f
+                            2 -> 1f
+                            3 -> -1f
+                            else -> Float.NEGATIVE_INFINITY
+                        }
+                    }
+                }
+                val sorted = values.copyOf().sortedDescending()
+                for (k in 1..size) {
+                    assertSortedThreshold(
+                        sorted[k - 1], Qwen3TtsProtocol.kthLargestFloat(values, k),
+                        "size=$size trial=$trial k=$k")
+                }
+            }
+        }
+        // Large-vocab k sweep, sampled to keep the run fast.
+        for (size in intArrayOf(1024, 3072)) {
+            for (trial in 0 until 3) {
+                val values = FloatArray(size) {
+                    if (Random(size + trial * 91 + it.toLong()).nextInt(8) == 0) {
+                        Float.NEGATIVE_INFINITY
+                    } else {
+                        Random(size * 3 + trial * 17 + it.toLong()).nextFloat() * 6f - 3f
+                    }
+                }
+                val sorted = values.copyOf().sortedDescending()
+                var k = 1
+                while (k <= size) {
+                    assertSortedThreshold(
+                        sorted[k - 1], Qwen3TtsProtocol.kthLargestFloat(values, k),
+                        "size=$size trial=$trial k=$k")
+                    k += size / 48
+                }
+                assertSortedThreshold(
+                    sorted[size - 1], Qwen3TtsProtocol.kthLargestFloat(values, size),
+                    "size=$size trial=$trial k=$size")
+            }
+        }
+    }
+
+    @Test
+    fun `samplers read the trailing vocab slice of padded logits`() {
+        val cfg = testConfig()
+        // Production shapes: the CP graph emits [1,2,2048] at the g=1 prefill
+        // step (flattened to 4096 floats), so the sampler MUST use the LAST
+        // vocab values of a longer array. Pin the tail offset twice — against
+        // the frozen oracle and against the tail-only call (an offset
+        // mutation would otherwise keep every exactly-vocab-sized test green).
+        val pad = 37
+        for (dist in listOf("uniform", "quantized-duplicates")) {
+            val cpTail = distribution(dist, cfg.cpVocab, seed = 77)
+            val cpPadded = FloatArray(pad + cfg.cpVocab) {
+                if (it < pad) 500f + it else cpTail[it - pad]
+            }
+            val g0Tail = distribution(dist, cfg.talkerVocab, seed = 78)
+            val g0Padded = FloatArray(pad + cfg.talkerVocab) {
+                if (it < pad) 500f + it else g0Tail[it - pad]
+            }
+            for (step in 0 until 50) {
+                val cpSeed = step * 2L
+                val g0Seed = step * 2L + 1
+                // Oracle parity on the padded input pins the tail offset for
+                // both implementations.
+                assertEquals(
+                    "oracle cp dist=$dist step=$step",
+                    legacySampleCodePredictor(cpPadded, cfg, 0.9f, 50, Random(cpSeed)),
+                    Qwen3TtsProtocol.sampleCodePredictor(cpPadded, cfg, 0.9f, 50, Random(cpSeed)))
+                // Prefix invisibility: padded and tail-only inputs with the
+                // same RNG stream must produce the same tokens.
+                assertEquals(
+                    "tail cp dist=$dist step=$step",
+                    Qwen3TtsProtocol.sampleCodePredictor(cpTail, cfg, 0.9f, 50, Random(cpSeed)),
+                    Qwen3TtsProtocol.sampleCodePredictor(cpPadded, cfg, 0.9f, 50, Random(cpSeed)))
+                assertEquals(
+                    "oracle g0 dist=$dist step=$step",
+                    legacySampleGroup0(
+                        g0Padded, cfg, 0.9f, 50, 1.05f, emptyList(), Random(g0Seed), false),
+                    Qwen3TtsProtocol.sampleGroup0(
+                        g0Padded, cfg, 0.9f, 50, 1.05f, emptyList(), Random(g0Seed), false))
+                assertEquals(
+                    "tail g0 dist=$dist step=$step",
+                    Qwen3TtsProtocol.sampleGroup0(
+                        g0Tail, cfg, 0.9f, 50, 1.05f, emptyList(), Random(g0Seed), false),
+                    Qwen3TtsProtocol.sampleGroup0(
+                        g0Padded, cfg, 0.9f, 50, 1.05f, emptyList(), Random(g0Seed), false))
+            }
+        }
+    }
+
+    @Test
+    fun `kth largest rejects empty arrays and out-of-range orders`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            Qwen3TtsProtocol.kthLargestFloat(FloatArray(0), 1)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            Qwen3TtsProtocol.kthLargestFloat(FloatArray(4) { it.toFloat() }, 0)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            Qwen3TtsProtocol.kthLargestFloat(FloatArray(4) { it.toFloat() }, 5)
+        }
+    }
+
+    @Test
+    fun `fft is bit-identical to frozen baseline across sizes`() {
+        for (n in intArrayOf(2, 4, 8, 64, 256, 1024, 4096)) {
+            val rng = Random(n.toLong())
+            val reRef = DoubleArray(n) { rng.nextDouble() * 2 - 1 }
+            val imRef = DoubleArray(n) { rng.nextDouble() * 2 - 1 }
+            val reNew = reRef.copyOf()
+            val imNew = imRef.copyOf()
+            Qwen3TtsProtocol.fftRadix2(reNew, imNew)
+            legacyFftRadix2(reRef, imRef)
+            for (i in 0 until n) {
+                assertEquals("re[$i] n=$n", reRef[i], reNew[i], 0.0)
+                assertEquals("im[$i] n=$n", imRef[i], imNew[i], 0.0)
+            }
+        }
+    }
+
+    @Test
+    fun `log mel is bit-identical to frozen baseline frontend`() {
+        val cases = linkedMapOf(
+            "zeros" to FloatArray(24_000),
+            "dc" to FloatArray(24_000) { 0.5f },
+            "sine" to FloatArray(24_000) {
+                (0.4 * sin(2.0 * PI * 220.0 * it / 24_000.0)).toFloat()
+            },
+            "impulse" to FloatArray(24_000).also { it[12_000] = 1f },
+            "noise-2s" to FloatArray(48_000) { Random(it * 31L + 7).nextFloat() * 2f - 1f },
+            "minimum-window" to FloatArray(256) { 0.25f },
+            "sub-fft" to FloatArray(1023) { (it % 7) / 10f },
+            "verified-8k" to FloatArray(8192).also { a -> for (i in 1000 until 6000) a[i] = 0.5f },
+        )
+        for ((name, audio) in cases) {
+            val legacy = legacyLogMelSpectrogram(audio, 24000)
+            val current = Qwen3TtsProtocol.logMelSpectrogram(audio, 24000)
+            assertEquals("frames $name", legacy.frames, current.frames)
+            assertTrue("bitwise $name", legacy.data.contentEquals(current.data))
+        }
+    }
+
+    @Test
+    fun `log mel rejects audio shorter than one hop cleanly`() {
+        // Baseline crashed with ArrayIndexOutOfBoundsException for these
+        // inputs; the guard now rejects them before touching the arrays.
+        for (size in intArrayOf(2, 100, 255)) {
+            assertThrows(IllegalArgumentException::class.java) {
+                Qwen3TtsProtocol.logMelSpectrogram(FloatArray(size) { 0.3f }, 24000)
+            }
+        }
+        // One full hop is exactly the minimum the frame loop can consume.
+        Qwen3TtsProtocol.logMelSpectrogram(FloatArray(256) { 0.3f }, 24000)
+    }
+
+    // ---- Microbenchmarks (gated; JVM-only, indicative) -----------------------
+    // Run with: AURALIS_PERF_BENCH=1 gradlew :app:testDebugUnitTest
+    //           --tests "com.dialect.interpreter.inference.Qwen3TtsProtocolTest"
+    // Medians are JVM (JIT C2) numbers on the host; they characterize the
+    // algorithmic change (work and allocation per call), NOT phone or
+    // end-to-end synthesis latency. The legacy legs include their garbage
+    // (copyOf + boxed sorted list) — that is part of the measured defect.
+
+    private var benchSink = 0
+
+    private inline fun benchMedian(repeats: Int, block: () -> Unit): Long {
+        repeat(repeats / 4 + 10) { block() } // JIT warmup
+        val samples = LongArray(repeats)
+        for (r in 0 until repeats) {
+            val t0 = System.nanoTime()
+            block()
+            samples[r] = System.nanoTime() - t0
+        }
+        samples.sort()
+        return samples[repeats / 2]
+    }
+
+    @Test
+    fun `benchmark sampling and mel rework`() {
+        Assume.assumeTrue(
+            "set AURALIS_PERF_BENCH=1 to run the microbenchmarks",
+            System.getenv("AURALIS_PERF_BENCH") == "1")
+        val cfg = testConfig()
+        val repeats = 400
+
+        // Code-predictor shape (vocab 2048), production topK/temperature.
+        val cpUniform = distribution("uniform", cfg.cpVocab, seed = 5)
+        val cpTies = distribution("quantized-duplicates", cfg.cpVocab, seed = 5)
+        val rngLegacyU = Random(1)
+        val rngNewU = Random(1)
+        val rngLegacyT = Random(1)
+        val rngNewT = Random(1)
+        val cpLegacyU = benchMedian(repeats) {
+            benchSink += legacySampleCodePredictor(cpUniform, cfg, 0.9f, 50, rngLegacyU)
+        }
+        val cpNewU = benchMedian(repeats) {
+            benchSink += Qwen3TtsProtocol.sampleCodePredictor(cpUniform, cfg, 0.9f, 50, rngNewU)
+        }
+        val cpLegacyT = benchMedian(repeats) {
+            benchSink += legacySampleCodePredictor(cpTies, cfg, 0.9f, 50, rngLegacyT)
+        }
+        val cpNewT = benchMedian(repeats) {
+            benchSink += Qwen3TtsProtocol.sampleCodePredictor(cpTies, cfg, 0.9f, 50, rngNewT)
+        }
+
+        // Group-0 shape (vocab 3072) with a mid-stream generated list.
+        val g0Logits = distribution("uniform", cfg.talkerVocab, seed = 6)
+        val generated = List(512) { it % cfg.cpVocab }
+        val rngLegacyG = Random(1)
+        val rngNewG = Random(1)
+        val g0Legacy = benchMedian(repeats) {
+            benchSink += legacySampleGroup0(
+                g0Logits, cfg, 0.9f, 50, 1.05f, generated, rngLegacyG, false)
+        }
+        val g0New = benchMedian(repeats) {
+            benchSink += Qwen3TtsProtocol.sampleGroup0(
+                g0Logits, cfg, 0.9f, 50, 1.05f, generated, rngNewG, false)
+        }
+
+        // Threshold selection alone vs full sort+copy.
+        val values = distribution("uniform", cfg.cpVocab, seed = 9)
+        val sortOnly = benchMedian(repeats) {
+            benchSink += values.copyOf().sortedDescending()[49].toInt()
+        }
+        val selectOnly = benchMedian(repeats) {
+            benchSink += Qwen3TtsProtocol.kthLargestFloat(values, 50).toInt()
+        }
+
+        // Mel frontend over ~2 s of 24 kHz audio (~189 frames).
+        val audio = FloatArray(48_000) { Random(it * 13L + 1).nextFloat() * 2f - 1f }
+        val melRepeats = 10
+        val melLegacy = benchMedian(melRepeats) {
+            benchSink += legacyLogMelSpectrogram(audio, 24000).data[0].toInt()
+        }
+        val melNew = benchMedian(melRepeats) {
+            benchSink += Qwen3TtsProtocol.logMelSpectrogram(audio, 24000).data[0].toInt()
+        }
+
+        fun ratio(legacy: Long, new: Long) = String.format("%.2fx", legacy.toDouble() / new)
+        println("BENCH sampleCodePredictor[2048,uniform]  legacy=${cpLegacyU}ns new=${cpNewU}ns ${ratio(cpLegacyU, cpNewU)}")
+        println("BENCH sampleCodePredictor[2048,ties]     legacy=${cpLegacyT}ns new=${cpNewT}ns ${ratio(cpLegacyT, cpNewT)}")
+        println("BENCH sampleGroup0[3072,gen=512]         legacy=${g0Legacy}ns new=${g0New}ns ${ratio(g0Legacy, g0New)}")
+        println("BENCH threshold-only[2048,k=50]          sort=${sortOnly}ns select=${selectOnly}ns ${ratio(sortOnly, selectOnly)}")
+        println("BENCH logMelSpectrogram[2s audio]        legacy=${melLegacy}ns new=${melNew}ns ${ratio(melLegacy, melNew)}")
+        assertTrue(benchSink != Int.MIN_VALUE)
     }
 }

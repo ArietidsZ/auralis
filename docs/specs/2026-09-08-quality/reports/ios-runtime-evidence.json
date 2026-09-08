@@ -1,0 +1,190 @@
+{
+  "exitCode": 0,
+  "binarySha256": "c1b27ecda4e7346c17160052bb106ebfa1de596ca01c9f9fa17c3f412924614e",
+  "harnessSha256": "aa3bb814b2b520d0c0d1e572fed7de2ccf95b145f746c266fe6145c33cf353df",
+  "sources": {
+    "AsrEngine.swift": "239d6c47c971c65f91c0b0ae79ecc691110ec018124bde4514fb7d86b3846604",
+    "HyMtNativeBridge.swift": "8fac5313df1f370dccc0be92a6933e706650f385369c4b8ae45d8e4eff6a79cc",
+    "ModelRepository.swift": "b48d523eda0d74f13e247e3f3d7969d0e1756895e331be95c6d42e7d332cd4d8",
+    "OnnxModelManager.swift": "60fe58b8e535e9df97543c608b54d5d422ed31cb466013d0706b492c0d61018e",
+    "OrtRuntime.swift": "d647e3e26110bfa53065b5088e4355b3aae1261424cdb36e4acab4529a3cea20",
+    "PackageVerifier.swift": "83302624fe70cfc958fb50979cdfa8f6a58e8bbbfacf8bd7b8576c7c80f18ceb",
+    "SharedContracts.swift": "d5a4bf47389d840ba602b58435e32f1892c06a237229b5a7e4309271b1a30ccf",
+    "TtsEngine.swift": "5af0fc423f86756d937f8eec83619647a909448f33b803aedfa9a5105216a732",
+    "VoiceProfileRepository.swift": "1fe7bf2ee7db889fff6372db3b4af3d78f357aba74d86fa933466960007f99bc"
+  },
+  "wavs": {
+    "121-chinese-icl.wav": "840705e933e5fa11c4f3b97a5ca35b4cbd955973d5200a0f00c9265e188b4694",
+    "121-chinese-xvector.wav": "7227002afbd7a8340f33cd3d54afd4c88cfcc396061e303158507986f0a51b4c",
+    "121-english-icl.wav": "513aa02c28c71d26677339e26e41190dcb8e4426631d6c34448ec4f068f5f620",
+    "121-english-xvector.wav": "87c0ad3792cbbd33b3e5b5942f184262d8e7af3066f9c034f5ac47de22232710",
+    "260-chinese-icl.wav": "de60fec8304e37a140d2a6e7649d72cc1913fcb6755f160a39506715761b45e8",
+    "260-chinese-xvector.wav": "5ef557363166b0f63d297652ab462f841c02758244f04f23c98687906bbdb23f",
+    "260-english-icl.wav": "20a33355b3060b2cde94fbcd1eb53755178aaf9ee073000723b0020e358bd547",
+    "260-english-xvector.wav": "e04f29dc5cdc3c9f00f3fad0e7477f3fc8a9f0c28254e75e9d9c3c89dd1d522a"
+  },
+  "matchesBaseline": true,
+  "environment": "macOS arm64 host, ONNX Runtime 1.24.2; not physical-device qualification",
+  "baselineCommit": "7e2cb57927d6290c089dce1c33a72bbc9902b6cc",
+  "checks": [
+    {
+      "expectedFrames": 106,
+      "gotFrames": 106,
+      "hasWarmup": true,
+      "id": "encoder-121",
+      "status": "pass",
+      "warmupPosition": 106,
+      "xvectorHasWarmup": false
+    },
+    {
+      "expectedFrames": 88,
+      "gotFrames": 88,
+      "hasWarmup": true,
+      "id": "encoder-260",
+      "status": "pass",
+      "warmupPosition": 88,
+      "xvectorHasWarmup": false
+    },
+    {
+      "clippingRatio": 0,
+      "conditioningMode": "icl",
+      "duration_s": 3.12,
+      "frames": 39,
+      "id": "121-english-icl",
+      "peak": 0.24347658455371857,
+      "status": "pass",
+      "wall_s": 10.478690958333573,
+      "warmupReused": true
+    },
+    {
+      "clippingRatio": 0,
+      "conditioningMode": "icl",
+      "duration_s": 2.72,
+      "frames": 34,
+      "id": "121-chinese-icl",
+      "peak": 0.28037765622138977,
+      "status": "pass",
+      "wall_s": 5.167879374999757,
+      "warmupReused": true
+    },
+    {
+      "clippingRatio": 0,
+      "conditioningMode": "icl",
+      "duration_s": 3.12,
+      "frames": 39,
+      "id": "260-english-icl",
+      "peak": 0.4616669714450836,
+      "status": "pass",
+      "wall_s": 5.734880166666699,
+      "warmupReused": true
+    },
+    {
+      "clippingRatio": 0,
+      "conditioningMode": "icl",
+      "duration_s": 2.96,
+      "frames": 37,
+      "id": "260-chinese-icl",
+      "peak": 0.41179177165031433,
+      "status": "pass",
+      "wall_s": 5.315171041666872,
+      "warmupReused": true
+    },
+    {
+      "clippingRatio": 0,
+      "conditioningMode": "xvector",
+      "duration_s": 3.12,
+      "frames": 39,
+      "id": "121-english-xvector",
+      "peak": 0.38960057497024536,
+      "status": "pass",
+      "wall_s": 5.2243536249998215,
+      "warmupReused": false
+    },
+    {
+      "clippingRatio": 0,
+      "conditioningMode": "xvector",
+      "duration_s": 2.72,
+      "frames": 34,
+      "id": "121-chinese-xvector",
+      "peak": 0.33545371890068054,
+      "status": "pass",
+      "wall_s": 4.730405374999464,
+      "warmupReused": false
+    },
+    {
+      "clippingRatio": 0,
+      "conditioningMode": "xvector",
+      "duration_s": 3.44,
+      "frames": 43,
+      "id": "260-english-xvector",
+      "peak": 0.4602113962173462,
+      "status": "pass",
+      "wall_s": 5.682604541666478,
+      "warmupReused": false
+    },
+    {
+      "clippingRatio": 0,
+      "conditioningMode": "xvector",
+      "duration_s": 2.72,
+      "frames": 34,
+      "id": "260-chinese-xvector",
+      "peak": 0.6433568596839905,
+      "status": "pass",
+      "wall_s": 4.5498221249999915,
+      "warmupReused": false
+    },
+    {
+      "chunk_vs_oneshot": 2.8759241104125977e-06,
+      "chunk_vs_synth": 0,
+      "id": "chunk-vs-oneshot",
+      "oneshot_vs_synth": 2.8759241104125977e-06,
+      "samples": 74880,
+      "status": "pass"
+    },
+    {
+      "error": "badOutput(\"sink-forced-failure\")",
+      "id": "sink-throw",
+      "status": "pass"
+    },
+    {
+      "frames": 11,
+      "id": "recover-after-sink",
+      "status": "pass"
+    },
+    {
+      "error": "frame budget exhausted before codec EOS; refusing truncated speech",
+      "id": "noEOS",
+      "status": "pass"
+    },
+    {
+      "frames": 11,
+      "id": "recover-after-noEOS",
+      "status": "pass"
+    },
+    {
+      "id": "cancel",
+      "secondsAfterCancel": 0.08559950000017125,
+      "status": "pass"
+    },
+    {
+      "frames": 11,
+      "id": "recover-after-cancel",
+      "status": "pass"
+    },
+    {
+      "error": "ICL requires nonempty reference text and TTS API2",
+      "id": "empty-icl-text",
+      "status": "pass"
+    },
+    {
+      "id": "snapshot-isolation",
+      "position": 106,
+      "status": "pass"
+    },
+    {
+      "error": "notLoaded(\"TTS\")",
+      "id": "release-invalidates-prepared",
+      "status": "pass"
+    }
+  ]
+}

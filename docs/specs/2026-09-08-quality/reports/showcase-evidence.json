@@ -1,0 +1,45 @@
+{
+  "video": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1600,
+        "height": 900,
+        "r_frame_rate": "30/1",
+        "nb_frames": "540",
+        "side_data_list": [
+          {}
+        ]
+      }
+    ],
+    "format": {
+      "duration": "18.000000",
+      "size": "577138"
+    },
+    "sha256": "80afe5a1f34c5af9b95f1bdac5a6e97d0d1586765c8250fa921e8f368de591bf"
+  },
+  "motionCheck": {
+    "True": {
+      "hashes": [
+        "23b9d952f45255a19e44b14a628c4aa691d5c3f0866c83360d4b7213c0723f5a",
+        "23b9d952f45255a19e44b14a628c4aa691d5c3f0866c83360d4b7213c0723f5a"
+      ],
+      "identicalWhileListening": true
+    },
+    "False": {
+      "hashes": [
+        "dde407d2c3ff99df0459a7e76355db3d06a3e1d0babf53ba81afb24fdc400b82",
+        "cdd6a02d85af6af448080ccbcb5d59ebfceea4510dfc8efd66de1551156bcf9a"
+      ],
+      "identicalWhileListening": false
+    }
+  },
+  "scope": "Simulated interface demonstration, not a model inference recording",
+  "remotionVersion": "4.0.522",
+  "sampleFrames": [
+    110,
+    130
+  ]
+}

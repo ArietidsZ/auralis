@@ -25,7 +25,6 @@ Exit codes: 0 all requested checks passed | 1 failure | 2 blocked/unsupported |
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import sys
 import time
@@ -37,18 +36,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "convert"))
 
 from manifest_contract import ArgParser, ContractError, load_manifest_v2, verify_build_record  # noqa: E402
-from fetch_model import package_lease, check_no_symlink_escape
-from model_tasks import load_suite, run_task, runner_layout_error
+from fetch_model import package_lease, check_no_symlink_escape, sha256_of  # noqa: E402
+from model_tasks import load_suite, run_task, runner_layout_error  # noqa: E402
 
 EXIT_OK, EXIT_FAIL, EXIT_BLOCKED, EXIT_CONTRACT, EXIT_ARGS = 0, 1, 2, 3, 4
-
-
-def sha256_of(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for chunk in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 class Report:

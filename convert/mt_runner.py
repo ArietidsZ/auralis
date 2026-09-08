@@ -34,7 +34,6 @@ from __future__ import annotations
 
 import argparse
 import ctypes
-import hashlib
 import json
 import os
 import platform
@@ -43,22 +42,18 @@ import sys
 import time
 from pathlib import Path
 
+from file_integrity import sha256_of as sha256_file
+
 PINNED = "1e411d8f5a1e23525fa3265dfb4bd76265465397"
 HYMT_OK, HYMT_INVALID, HYMT_ABORTED, HYMT_FAILED = 0, 1, 2, 3
 STATUS_NAME = {0: "ok", 1: "invalid", 2: "aborted", 3: "failed"}
 
-DEFAULT_LIB = Path(
-    os.environ.get(
-        "HYMT_LIB",
-        "/Users/arietids/Library/Caches/Auralis/mt/build-host/libhymt_core.dylib",
-    )
-)
-DEFAULT_MODEL = Path(
-    os.environ.get(
-        "HYMT_MODEL",
-        "/Users/arietids/Library/Caches/Auralis/mt/models/Hy-MT1.5-1.8B-1.25bit-stq43.gguf",
-    )
-)
+DEFAULT_CACHE = Path(os.environ.get("AURALIS_CACHE", Path.home() / "Library/Caches/Auralis"))
+DEFAULT_LIB = Path(os.environ.get(
+    "HYMT_LIB", DEFAULT_CACHE / "mt/build-host" /
+    ("libhymt_core.dylib" if sys.platform == "darwin" else "libhymt_core.so")))
+DEFAULT_MODEL = Path(os.environ.get(
+    "HYMT_MODEL", DEFAULT_CACHE / "mt/models/Hy-MT1.5-1.8B-1.25bit-stq43.gguf"))
 DEFAULT_CASES = [
     {"id": "zh-en-museum", "text": "今天下午我们去博物馆参观，好吗？",
      "sourceLanguage": "Chinese", "targetLanguage": "English",
@@ -98,14 +93,6 @@ class RunnerInputError(RunnerError):
 
 class RunnerFailError(RunnerError):
     exit_code = 1
-
-
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def other_llama_pids() -> list[int]:

@@ -52,10 +52,26 @@ struct OnnxTensor {
     let shape: [Int]
     let dtype: OnnxTensorDtype
 
+    /// Validate input shapes before allocating a tensor.
+    private static func elementCount(_ shape: [Int]) throws -> Int {
+        var count = 1
+        for dim in shape {
+            guard dim >= 0 else {
+                throw OnnxRuntimeError.inputTensor("shape \(shape) has a negative dimension")
+            }
+            let (product, overflow) = count.multipliedReportingOverflow(by: dim)
+            guard !overflow else {
+                throw OnnxRuntimeError.inputTensor("shape \(shape) exceeds the addressable element count")
+            }
+            count = product
+        }
+        return count
+    }
+
     init(floatData: [Float], shape: [Int]) throws {
         self.shape = shape
         self.dtype = .float
-        let expected = shape.reduce(1, *)
+        let expected = try Self.elementCount(shape)
         guard expected == floatData.count else {
             throw OnnxRuntimeError.inputTensor("element count \(floatData.count) does not match shape \(shape)")
         }
@@ -74,7 +90,7 @@ struct OnnxTensor {
     init(int64Data: [Int64], shape: [Int]) throws {
         self.shape = shape
         self.dtype = .int64
-        let expected = shape.reduce(1, *)
+        let expected = try Self.elementCount(shape)
         guard expected == int64Data.count else {
             throw OnnxRuntimeError.inputTensor("element count \(int64Data.count) does not match shape \(shape)")
         }
@@ -108,37 +124,60 @@ struct OnnxTensor {
         }
     }
 
-    private func rawData() throws -> Data {
+    /// Keep the Foundation wrapper; bridging to Data may copy its payload.
+    private func rawMutableData() throws -> NSMutableData {
         do {
-            return try value.tensorData() as Data
+            return try value.tensorData()
         } catch {
             throw OnnxRuntimeError.outputTensor("tensorData failed: \(error)")
         }
     }
 
     func floatArray() throws -> [Float] {
-        guard dtype == .float else {
-            throw OnnxRuntimeError.outputTensor("dtype is \(dtype), not float; refusing to reinterpret")
-        }
-        let data = try rawData()
-        guard data.count % MemoryLayout<Float>.size == 0 else {
-            throw OnnxRuntimeError.outputTensor("byte count \(data.count) is not a multiple of Float")
-        }
-        return data.withUnsafeBytes { buffer in
-            Array(buffer.bindMemory(to: Float.self))
-        }
+        try withFloatBuffer { Array($0) }
     }
 
     func int64Array() throws -> [Int64] {
         guard dtype == .int64 else {
             throw OnnxRuntimeError.outputTensor("dtype is \(dtype), not int64; refusing to reinterpret")
         }
-        let data = try rawData()
-        guard data.count % MemoryLayout<Int64>.size == 0 else {
-            throw OnnxRuntimeError.outputTensor("byte count \(data.count) is not a multiple of Int64")
+        let data = try rawMutableData()
+        guard data.length % MemoryLayout<Int64>.size == 0 else {
+            throw OnnxRuntimeError.outputTensor("byte count \(data.length) is not a multiple of Int64")
         }
-        return data.withUnsafeBytes { buffer in
-            Array(buffer.bindMemory(to: Int64.self))
+        let count = data.length / MemoryLayout<Int64>.size
+        return withExtendedLifetime(value) { _ in
+            withExtendedLifetime(data) { data in
+                let base = UnsafeRawPointer(data.bytes).assumingMemoryBound(to: Int64.self)
+                return Array(UnsafeBufferPointer(start: base, count: count))
+            }
+        }
+    }
+
+    /// Dtype gate with floatArray()'s exact refusal semantics, without
+    /// reading any tensor data. Used when a large output tensor is validated
+    /// for reuse as a subsequent input.
+    func requireFloat() throws {
+        guard dtype == .float else {
+            throw OnnxRuntimeError.outputTensor("dtype is \(dtype), not float; refusing to reinterpret")
+        }
+    }
+
+    /// Borrow float data while retaining both its runtime and Foundation owners.
+    /// The pointer must not escape the closure. On the tested macOS runtime,
+    /// tensorData() creates one snapshot; floatArray() adds an Array copy.
+    func withFloatBuffer<R>(_ body: (UnsafeBufferPointer<Float>) throws -> R) throws -> R {
+        try requireFloat()
+        let data = try rawMutableData()
+        guard data.length % MemoryLayout<Float>.size == 0 else {
+            throw OnnxRuntimeError.outputTensor("byte count \(data.length) is not a multiple of Float")
+        }
+        return try withExtendedLifetime(value) { _ in
+            try withExtendedLifetime(data) { data in
+                let base = UnsafeRawPointer(data.bytes).assumingMemoryBound(to: Float.self)
+                return try body(UnsafeBufferPointer(start: base,
+                                                    count: data.length / MemoryLayout<Float>.size))
+            }
         }
     }
 }
@@ -199,5 +238,14 @@ final class OrtInferenceSession {
         } catch {
             throw OnnxRuntimeError.inference("\(error)")
         }
+    }
+}
+
+/// Test support: app-hosted test bundles resolve ORT classes from the host
+/// binary, so the synthetic-graph tests obtain a real environment through this
+/// factory instead of importing the bindings module themselves.
+enum OrtInferenceTestSupport {
+    static func makeEnv() throws -> ORTEnv {
+        try ORTEnv(loggingLevel: ORTLoggingLevel.warning)
     }
 }

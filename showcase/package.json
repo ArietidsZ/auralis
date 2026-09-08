@@ -1,0 +1,24 @@
+{
+  "name": "auralis-showcase",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "studio": "remotion studio src/index.ts --public-dir=../docs/brand",
+    "still": "remotion still src/index.ts AuralisShowcase out/poster.png --frame=330 --public-dir=../docs/brand",
+    "render": "remotion render src/index.ts AuralisShowcase out/auralis-motion.mp4 --codec=h264 --muted --crf=18 --concurrency=1 --public-dir=../docs/brand"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.522",
+    "remotion": "4.0.522",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7"
+  }
+}

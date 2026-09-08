@@ -1,5 +1,7 @@
 package com.dialect.interpreter.ui.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.animation.fadeIn
@@ -54,25 +56,25 @@ fun AppNavigation(reduceMotion: Boolean = false) {
         navController = navController,
         startDestination = AppRoutes.INTERPRET,
         enterTransition = {
-            if (reduceMotion) fadeIn(tween(1)) else slideInHorizontally(
+            if (reduceMotion) EnterTransition.None else slideInHorizontally(
                 initialOffsetX = { it / 4 },
                 animationSpec = tween(TRANSITION_MS)
             ) + fadeIn(tween(TRANSITION_MS))
         },
         exitTransition = {
-            if (reduceMotion) fadeOut(tween(1)) else slideOutHorizontally(
+            if (reduceMotion) ExitTransition.None else slideOutHorizontally(
                 targetOffsetX = { -it / 4 },
                 animationSpec = tween(TRANSITION_MS)
             ) + fadeOut(tween(TRANSITION_MS / 2))
         },
         popEnterTransition = {
-            if (reduceMotion) fadeIn(tween(1)) else slideInHorizontally(
+            if (reduceMotion) EnterTransition.None else slideInHorizontally(
                 initialOffsetX = { -it / 4 },
                 animationSpec = tween(TRANSITION_MS)
             ) + fadeIn(tween(TRANSITION_MS))
         },
         popExitTransition = {
-            if (reduceMotion) fadeOut(tween(1)) else slideOutHorizontally(
+            if (reduceMotion) ExitTransition.None else slideOutHorizontally(
                 targetOffsetX = { it / 4 },
                 animationSpec = tween(TRANSITION_MS)
             ) + fadeOut(tween(TRANSITION_MS / 2))
@@ -92,7 +94,10 @@ fun AppNavigation(reduceMotion: Boolean = false) {
         }
 
         composable(AppRoutes.VOICE_PROFILE) {
-            VoiceProfileScreen(onBack = { navController.popBackStack() })
+            VoiceProfileScreen(
+                reduceMotion = reduceMotion,
+                onBack = { navController.popBackStack() },
+            )
         }
 
         composable(AppRoutes.SETTINGS) {

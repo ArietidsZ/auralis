@@ -7,6 +7,7 @@ import SwiftUI
 /// (Observation tracks them), so no duplicated @State copies can drift.
 struct InterpretView: View {
     @Environment(OnnxModelManager.self) private var modelManager
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var viewModel = InterpretViewModel()
     @State private var sourceDialect = "四川话"
     @State private var targetLanguage = "普通话"
@@ -19,6 +20,21 @@ struct InterpretView: View {
     private var isRunning: Bool {
         guard let pipeline else { return false }
         return pipeline.state != .idle && pipeline.state != .failed
+    }
+
+    /// Half-duplex fact: capture stays open for the whole session, but while
+    /// synthesized audio plays the captured input is discarded (the speaker
+    /// feeds the mic back), so the input level is only real while it is being
+    /// turned into a transcript. `.synthesizing` still shows the live meter —
+    /// the speaker is silent until `.playing` begins (`updateState(.playing)`
+    /// precedes the first scheduled buffer) — while `.playing` and the idle/
+    /// bookend states show none. Playback is never presented as listening.
+    private var isMicLive: Bool {
+        guard let pipeline else { return false }
+        switch pipeline.state {
+        case .listening, .recognizing, .translating, .synthesizing: return true
+        case .idle, .starting, .stopping, .playing, .failed: return false
+        }
     }
 
     private var targetLanguageCode: String {
@@ -64,6 +80,14 @@ struct InterpretView: View {
                     Text(subtitleText)
                         .font(.appLabelSmall)
                         .foregroundStyle(isRunning ? Color.appLiveGreen : .appTextSecondary)
+                        // Session-status transition (motion spec: ~160–220 ms
+                        // fade with a small vertical change). New identity per
+                        // state → crossfade; the color rides the same ease;
+                        // reduced motion swaps instantly.
+                        .id(pipeline?.state ?? .idle)
+                        .transition(.opacity.combined(with: .offset(y: 4)))
+                        .animation(reduceMotion ? nil : .easeOut(duration: 0.18),
+                                   value: pipeline?.state ?? .idle)
 
                     if hasTelemetry {
                         Text(telemetryText)
@@ -170,7 +194,7 @@ struct InterpretView: View {
     private var emptyStateView: some View {
         VStack(spacing: 20) {
             Spacer()
-            FloatingIcon()
+            EmptyStateIcon()
             Text("开始说话，翻译将出现在这里")
                 .font(.appBodyMedium)
                 .foregroundStyle(Color.appTextSecondary.opacity(0.5))
@@ -184,6 +208,13 @@ struct InterpretView: View {
 
     // MARK: - Chat List
 
+    /// Insertion/reorder animation for the turn list (motion spec "New
+    /// conversation item"): fade with small displacement on stable turn ids.
+    /// Reduced motion disables it entirely.
+    private var insertionAnimation: Animation? {
+        reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.85)
+    }
+
     private var chatListView: some View {
         ScrollViewReader { proxy in
             ScrollView {
@@ -191,18 +222,25 @@ struct InterpretView: View {
                     ForEach(viewModel.messages) { message in
                         ChatBubblePair(message: message)
                             .id(message.id)
-                            .transition(.asymmetric(
-                                insertion: .scale(scale: 0.95).combined(with: .opacity),
-                                removal: .opacity
-                            ))
+                            .transition(.opacity.combined(with: .offset(y: 12)))
                     }
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
+                // Animates membership changes only (identity is the stable,
+                // monotonic turn id): text updates inside an existing turn
+                // never re-animate the list. Reordering is handled by the
+                // same placement animation.
+                .animation(insertionAnimation, value: viewModel.messages.map(\.id))
             }
-            .onChange(of: viewModel.messages.count) {
-                if let last = viewModel.messages.last {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            // Keyed on the last turn id, not the count: the capped list
+            // (maxMessages) keeps a constant count while new turns arrive.
+            .onChange(of: viewModel.messages.last?.id) { _, _ in
+                guard let last = viewModel.messages.last else { return }
+                if reduceMotion {
+                    proxy.scrollTo(last.id, anchor: .bottom)
+                } else {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                         proxy.scrollTo(last.id, anchor: .bottom)
                     }
                 }
@@ -213,12 +251,19 @@ struct InterpretView: View {
     // MARK: - Bottom Bar
 
     private var bottomBar: some View {
-        HStack(spacing: 10) {
+        // Amplitude-reactive scaling runs only while the mic is genuinely
+        // live and reduced motion is off; playback keeps the controls calm.
+        // scaleEffect is a draw/compositing-phase transform — no layout
+        // resize.
+        let pulse: CGFloat = (isMicLive && !reduceMotion)
+            ? CGFloat(pipeline?.amplitude ?? 0)
+            : 0
+
+        return HStack(spacing: 10) {
             // Dialect label / waveform
             HStack {
-                if isRunning {
+                if isMicLive {
                     WaveformView(amplitude: pipeline?.amplitude ?? 0, isActive: true)
-                        .frame(height: 28)
                 } else {
                     Image(systemName: "textformat.abc")
                         .foregroundStyle(Color.appTextSecondary.opacity(0.5))
@@ -241,9 +286,9 @@ struct InterpretView: View {
                 Circle()
                     .fill(isRunning ? Color.appRecordingRed.opacity(0.12) : Color.clear)
                     .frame(width: 56, height: 56)
-                    .scaleEffect(isRunning ? 1 + CGFloat(pipeline?.amplitude ?? 0) * 0.3 : 0.8)
-                    .animation(.spring(response: 0.35, dampingFraction: 0.5), value: pipeline?.amplitude ?? 0)
-                    .animation(.easeInOut(duration: 0.3), value: isRunning)
+                    .scaleEffect(isRunning ? 1 + pulse * 0.3 : 0.8)
+                    .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: pulse)
+                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: isRunning)
 
                 Button(action: togglePipeline) {
                     Image(systemName: isRunning ? "stop.fill" : "mic.fill")
@@ -252,9 +297,13 @@ struct InterpretView: View {
                         .frame(width: 48, height: 48)
                         .background(isRunning ? Color.appRecordingRed : .appAccent)
                         .clipShape(Circle())
-                        .scaleEffect(isRunning ? 1 + CGFloat(pipeline?.amplitude ?? 0) * 0.2 : 1)
-                        .animation(.spring(response: 0.3, dampingFraction: 0.55), value: pipeline?.amplitude ?? 0)
+                        .scaleEffect(1 + pulse * 0.2)
+                        // Same keyed ease as the ring: one shared level value
+                        // drives both, so they never desync (no independent
+                        // springs), and chunk-rate updates stay smooth.
+                        .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: pulse)
                 }
+                .buttonStyle(PressFeedbackStyle())
             }
         }
         .padding(.horizontal, 12)
@@ -276,21 +325,15 @@ struct InterpretView: View {
     }
 }
 
-// MARK: - Floating Icon
+// MARK: - Empty State Icon
 
-private struct FloatingIcon: View {
-    @State private var isFloating = false
-
+/// Static decoration (motion spec "Idle and reduced motion": no idle
+/// timeline or periodic task — the idle screen never floats or breathes).
+private struct EmptyStateIcon: View {
     var body: some View {
         Image(systemName: "bubble.left.and.bubble.right")
             .font(.system(size: 64))
             .foregroundStyle(Color.appTextTertiary.opacity(0.3))
-            .offset(y: isFloating ? -6 : 0)
-            .animation(
-                .easeInOut(duration: 2.0).repeatForever(autoreverses: true),
-                value: isFloating
-            )
-            .onAppear { isFloating = true }
     }
 }
 
@@ -421,9 +464,11 @@ private struct BubbleShape: Shape {
     }
 }
 
-/// Smooth wave-scale typing indicator.
+/// Smooth wave-scale typing indicator. Reduced motion keeps the dots static
+/// at full size — the repeatForever animation is never even started.
 private struct TypingIndicator: View {
-    @State private var phase: [Bool] = [false, false, false]
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isAnimating = false
 
     var body: some View {
         HStack(spacing: 4) {
@@ -431,17 +476,31 @@ private struct TypingIndicator: View {
                 Circle()
                     .fill(Color.appTextSecondary.opacity(0.4))
                     .frame(width: 6, height: 6)
-                    .scaleEffect(phase[index] ? 1.1 : 0.6)
+                    .scaleEffect(reduceMotion ? 0.9 : (isAnimating ? 1.1 : 0.6))
                     .animation(
-                        .easeInOut(duration: 0.5)
-                        .repeatForever(autoreverses: true)
-                        .delay(Double(index) * 0.16),
-                        value: phase[index]
+                        reduceMotion ? nil : .easeInOut(duration: 0.5)
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(index) * 0.16),
+                        value: isAnimating
                     )
             }
         }
-        .onAppear {
-            for i in 0..<3 { phase[i] = true }
-        }
+        .onAppear { isAnimating = !reduceMotion }
+        .onChange(of: reduceMotion) { _, reduced in isAnimating = !reduced }
+    }
+}
+
+/// Small press feedback on the main action, acting on the draw/compositing
+/// phase only — `scaleEffect` never changes layout (motion spec "Main
+/// action"). Reduced motion keeps the pressed dim as native feedback but does
+/// not scale.
+private struct PressFeedbackStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(!reduceMotion && configuration.isPressed ? 0.94 : 1)
+            .opacity(configuration.isPressed ? 0.85 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }

@@ -773,6 +773,20 @@ enum SessionCoreTestHarness {
         await run("empty transcript is terminal complete") { await OrchestratorTests.emptyTranscriptIsTerminalComplete($0) }
         await run("natural stream end fails honestly") { await OrchestratorTests.naturalStreamEndFailsHonestly($0) }
 
+        await run("continuous speech emits sample-bounded utterances") { try CaptureBoundaryTests.continuousSpeechIsBounded($0) }
+        await run("large capture input streams bounded outputs") { try CaptureBoundaryTests.oversizedInputStreamsBoundedOutputs($0) }
+        await run("capture partitioning preserves every sample") { try CaptureBoundaryTests.partitioningPreservesSamples($0) }
+        await run("capture pre-roll fits inside utterance cap") { try CaptureBoundaryTests.prerollFitsInsideBound($0) }
+        await run("capture reset discards old PCM") { try CaptureBoundaryTests.resetDiscardsPartialAudio($0) }
+        await run("natural speech endpoint retains short pauses") { try CaptureBoundaryTests.naturalEndpointRetainsShortPause($0) }
+        await run("VAD clock follows sample count") { CaptureBoundaryTests.vadClockUsesSampleCounts($0) }
+        await run("production capture commits before silence") { await CaptureBoundaryTests.pipelineCommitsBeforeSilence($0) }
+        await run("capture callback overflow ends contiguous prefix") { await CaptureBoundaryTests.callbackOverflowEndsContiguousPrefix($0) }
+        await run("capture callback validates chunk length") { await CaptureBoundaryTests.callbackRejectsInvalidChunkLength($0) }
+        await run("capture callback lifetime is per recording") { await CaptureBoundaryTests.callbackFinishAndNewRecordingAreIndependent($0) }
+        await run("capture callback overflow fails session") { await CaptureBoundaryTests.callbackOverflowFailsSession($0) }
+        await run("non-finite capture fails visibly") { await CaptureBoundaryTests.invalidCaptureFailsVisibly($0) }
+
         await run("VM: reduction by turn identity") { await InterpretViewModelTests.reductionByIdentity($0) }
         await run("VM: MT unavailable keeps target empty; next turn separate") { await InterpretViewModelTests.mtUnavailableKeepsTargetEmpty($0) }
         await run("VM: dropped turn becomes notice") { await InterpretViewModelTests.droppedTurnBecomesNotice($0) }

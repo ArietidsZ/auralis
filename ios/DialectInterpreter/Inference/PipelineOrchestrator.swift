@@ -548,8 +548,7 @@ final class PipelineOrchestrator {
         // down (stop during boot, etc.).
         guard !Task.isCancelled else { return }
 
-        let vad = VoiceActivityDetector()
-        var utteranceChunks: [[Float]] = []
+        let segmenter = UtteranceSegmenter()
 
         do {
             try audioCapture.start()
@@ -572,33 +571,27 @@ final class PipelineOrchestrator {
             // reset VAD state so the post-playback tail is not glued to the
             // pre-playback utterance.
             if audioPlayback.isPlaying {
-                utteranceChunks.removeAll()
-                vad.reset()
+                segmenter.reset()
                 continue
             }
 
-            let vadResult = vad.process(audioChunk: chunk)
-
-            if vadResult.isSpeech {
-                utteranceChunks.append(chunk)
-            }
-
-            guard vadResult.utteranceComplete, !utteranceChunks.isEmpty else { continue }
-
-            let utterance = utteranceChunks.flatMap { $0 }
-            utteranceChunks.removeAll()
-
-            // Turn id assigned at capture time, when the job enters the queue.
-            let job = TurnJob(turnId: Self.nextTurnId(), sessionId: sid, audio: utterance)
-            let accepted = queue.enqueue(job)
-            if accepted {
-                telemetry.utteranceCount += 1
-            } else {
-                // Dropped is a first-class, visible turn status — no silent loss.
-                telemetry.droppedUtterances = Int64(queue.droppedCount)
-                emitEvent(.turnUpdated(TurnState(
-                    id: job.turnId, sessionId: sid, status: .dropped,
-                    sourceText: nil, translatedText: nil)))
+            do {
+                try segmenter.process(chunk) { utterance in
+                    // Identity is assigned at capture time, including forced
+                    // long-speech splits; the ended queue keeps its own bound.
+                    let job = TurnJob(turnId: Self.nextTurnId(), sessionId: sid, audio: utterance)
+                    if queue.enqueue(job) {
+                        telemetry.utteranceCount += 1
+                    } else {
+                        telemetry.droppedUtterances = Int64(queue.droppedCount)
+                        emitEvent(.turnUpdated(TurnState(
+                            id: job.turnId, sessionId: sid, status: .dropped,
+                            sourceText: nil, translatedText: nil)))
+                    }
+                }
+            } catch {
+                emitEvent(.error("Captured audio is invalid. Restart recording."))
+                return
             }
         }
     }

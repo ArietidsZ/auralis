@@ -27,18 +27,17 @@ final class AudioRecorder {
 
     // Chunk streaming
     private var recordingID: UUID?
-    private var chunkStream: AsyncStream<[Float]>?
-    private var chunkContinuation: AsyncStream<[Float]>.Continuation?
+    private var chunkPipe: AudioChunkStream?
 
-    /// Async stream of Float PCM audio chunks.
-    var audioChunks: AsyncStream<[Float]> {
-        if let chunkStream { return chunkStream }
-        let stream = AsyncStream<[Float]> { continuation in
-            self.chunkContinuation = continuation
-        }
-        chunkStream = stream
-        return stream
+    private var pipe: AudioChunkStream {
+        if let chunkPipe { return chunkPipe }
+        let created = AudioChunkStream()
+        chunkPipe = created
+        return created
     }
+
+    /// Async stream of Float PCM audio chunks for this recording.
+    var audioChunks: AsyncStream<[Float]> { pipe.stream }
 
     /// Check if recording permission is granted.
     var hasPermission: Bool {
@@ -133,10 +132,9 @@ final class AudioRecorder {
             throw NSError(domain: "AudioRecorder", code: -4, userInfo: [NSLocalizedDescriptionKey: "无法转换麦克风格式"])
         }
 
-        _ = audioChunks
-        // Each tap retains only its own stream; a late callback cannot feed
-        // the next recording or race a mutable continuation on the main actor.
-        let continuation = chunkContinuation!
+        // Each tap retains its own bounded stream. Late callbacks cannot
+        // feed or stop a subsequent recording.
+        let capturePipe = pipe
         var accumulationBuffer: [Float] = []
         accumulationBuffer.reserveCapacity(Self.chunkSizeSamples * 2)
 
@@ -179,6 +177,14 @@ final class AudioRecorder {
                 let chunk = Array(accumulationBuffer.prefix(Self.chunkSizeSamples))
                 accumulationBuffer.removeFirst(Self.chunkSizeSamples)
 
+                guard capturePipe.yield(chunk) else {
+                    DispatchQueue.main.async {
+                        guard let self, self.recordingID == id else { return }
+                        self.stopRecording()
+                    }
+                    return
+                }
+
                 // Calculate RMS
                 var energy: Double = 0
                 for sample in chunk {
@@ -191,7 +197,6 @@ final class AudioRecorder {
                     self.amplitude = rms
                 }
 
-                continuation.yield(chunk)
             }
         }
 
@@ -211,9 +216,8 @@ final class AudioRecorder {
         engine = nil
         isRecording = false
         amplitude = 0
-        chunkContinuation?.finish()
-        chunkContinuation = nil
-        chunkStream = nil
+        chunkPipe?.finish()
+        chunkPipe = nil
         print("[AudioRecorder] Recording stopped")
     }
 

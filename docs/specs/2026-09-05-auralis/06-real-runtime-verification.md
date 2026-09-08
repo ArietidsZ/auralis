@@ -4,7 +4,7 @@
 
 ## 可复现来源
 
-HF 文件使用 source.repoId + 完整 source.revision。GitHub release 模型使用 source.archive（HTTPS URL、归档 SHA-256、精确大小、stripPrefix）；release 标签不是 git commit。归档先验整体哈希，再只复制清单声明的普通文件；路径穿越、链接、重复成员被拒绝。Python/Kotlin/Swift 对这些字段及重复 JSON 键采用一致规则。
+HF 文件使用 source.repoId + 完整 source.revision。GitHub release 模型使用 source.archive（HTTPS URL、归档 SHA-256、精确大小、stripPrefix）；release 标签不是 git commit。归档先验整体哈希，再只复制清单声明的普通文件；路径穿越、链接、清单内文件的重复成员被拒绝；清单外普通文件不安装。Python/Kotlin/Swift 对这些字段及重复 JSON 键采用一致规则。
 
 MT 只允许一个已审计转换 source.transform：hymt-stq42-to43-v1。它记录原始文件名与 93e025… 输入哈希；files 记录 e42935… 的运行时产物、精确大小和 translator 角色，runtimeRevision 固定 1e411d8… 。这不是重新量化；完整张量数据不变。程序不执行来自 manifest 的任意命令。获取工具从原始文件实际转换并验证输出后，与 manifest 一起切换；错误保留旧包。
 

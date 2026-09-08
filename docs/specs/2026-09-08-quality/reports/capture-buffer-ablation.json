@@ -1,0 +1,26 @@
+[
+  {
+    "bufferedChunksObserved" : 1000,
+    "candidate" : "unbounded baseline",
+    "drops" : 0,
+    "firstId" : 0,
+    "lastId" : 999,
+    "logicalPcmBytes" : 12800000
+  },
+  {
+    "bufferedChunksObserved" : 8,
+    "candidate" : "keep newest eight and continue",
+    "drops" : 992,
+    "firstId" : 992,
+    "lastId" : 999,
+    "logicalPcmBytes" : 102400
+  },
+  {
+    "bufferedChunksObserved" : 8,
+    "candidate" : "bounded contiguous prefix then terminate",
+    "firstId" : 0,
+    "firstRejectedId" : 8,
+    "lastId" : 7,
+    "logicalPcmBytes" : 102400
+  }
+]

@@ -17,10 +17,13 @@ EOF
 if ! swiftc \
   "$SRC_IOS/Inference/PipelineOrchestrator.swift" \
   "$SRC_IOS/Audio/VoiceActivityDetector.swift" \
+  "$SRC_IOS/Audio/UtteranceSegmenter.swift" \
+  "$SRC_IOS/Audio/AudioChunkStream.swift" \
   "$SRC_IOS/Audio/PlaybackOperation.swift" \
   "$SRC_IOS/UI/Screens/InterpretViewModel.swift" \
   "$SRC_TESTS/FakeStages.swift" \
   "$SRC_TESTS/SessionCoreTests.swift" \
+  "$SRC_TESTS/CaptureBoundaryTests.swift" \
   "$SRC_TESTS/PlaybackOperationTests.swift" \
   "$OUT/main.swift" \
   -o "$OUT/session-tests" \

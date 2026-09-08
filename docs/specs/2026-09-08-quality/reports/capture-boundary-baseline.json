@@ -1,0 +1,11 @@
+{
+  "asrCallsBeforeSilence": 0,
+  "baseline": "7e2cb57",
+  "exceeded10sBound": true,
+  "expectedMaxSamples": 160000,
+  "inputSpeechSamples": 320000,
+  "observedUtteranceSamples": [
+    364800
+  ],
+  "scope": "Host session core with synthetic PCM and fake recognition; not ASR accuracy or physical-device performance"
+}

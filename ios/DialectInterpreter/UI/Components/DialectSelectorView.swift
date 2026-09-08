@@ -5,9 +5,16 @@ struct DialectSelectorView: View {
     @Binding var sourceDialect: String
     @Binding var targetLanguage: String
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // Dialects come from the shared catalog (single source of truth, IDs stable).
     private var catalog: SharedContracts.DialectCatalog? { try? SharedContracts.loadCatalog() }
+
+    /// Restrained selection highlight, on the shared status-change rhythm;
+    /// reduced motion switches instantly.
+    private var selectionAnimation: Animation? {
+        reduceMotion ? nil : .easeOut(duration: 0.18)
+    }
 
     var body: some View {
         NavigationStack {
@@ -16,7 +23,7 @@ struct DialectSelectorView: View {
                     // Source dialect section
                     VStack(alignment: .leading, spacing: 10) {
                         Text("源方言".uppercased())
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.appLabelSmall.weight(.medium))
                             .foregroundStyle(Color.appTextSecondary)
                             .tracking(0.8)
 
@@ -26,7 +33,7 @@ struct DialectSelectorView: View {
                                     text: dialect.displayLabel,
                                     isSelected: dialect.displayLabel == sourceDialect
                                 ) {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    withAnimation(selectionAnimation) {
                                         sourceDialect = dialect.displayLabel
                                     }
                                 }
@@ -37,7 +44,7 @@ struct DialectSelectorView: View {
                     // Target language section
                     VStack(alignment: .leading, spacing: 10) {
                         Text("目标语言".uppercased())
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.appLabelSmall.weight(.medium))
                             .foregroundStyle(Color.appTextSecondary)
                             .tracking(0.8)
 
@@ -47,7 +54,7 @@ struct DialectSelectorView: View {
                                     text: language.displayLabel,
                                     isSelected: language.displayLabel == targetLanguage
                                 ) {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    withAnimation(selectionAnimation) {
                                         targetLanguage = language.displayLabel
                                     }
                                 }
@@ -71,7 +78,8 @@ struct DialectSelectorView: View {
     }
 }
 
-/// Capsule chip button with spring animation.
+/// Capsule chip button; selection highlight animates with the shared
+/// restrained rhythm driven by the caller.
 private struct ChipButton: View {
     let text: String
     let isSelected: Bool
@@ -80,7 +88,7 @@ private struct ChipButton: View {
     var body: some View {
         Button(action: action) {
             Text(text)
-                .font(.system(size: 13, weight: isSelected ? .medium : .regular))
+                .font(.appBodySmall.weight(isSelected ? .medium : .regular))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 7)
                 .background(isSelected ? Color.appAccent.opacity(0.15) : Color.appSurface)

@@ -97,7 +97,7 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             SettingsSection("运行环境") {
-                InfoRow(Icons.Filled.Memory, "推理后端", "CPU (ONNX Runtime 1.22)")
+                InfoRow(Icons.Filled.Memory, "运算设备", "本机 CPU")
                 InfoRow(Icons.Filled.Smartphone, "SoC", socName.ifBlank { "—" })
                 InfoRow(Icons.Filled.Info, "处理方式", "全部在本机离线完成")
             }

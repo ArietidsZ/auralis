@@ -409,14 +409,16 @@ final class TtsEngine {
         }
         let codes = try await encodeReferenceCodes(pcm24k: pcm24k, config: cfg)
         let (_, warmed) = try await streamingVocoderStep(
-            groupMajor: codes, state: StreamingVocoderState.zero())
+            groupMajor: codes, state: try StreamingVocoderState.zero())
         try Task.checkCancellation()
         guard isLoaded, referenceGeneration == generation else {
             throw OrtInferenceFailure.notLoaded("TTS reference preparation was released")
         }
+        // The warm-up snapshot is value-owned: materialize the validated
+        // output tensors once (one copy) instead of aliasing graph memory.
         let warmup = PreparedReference.VocoderWarmup(
-            conv: Array(warmed.conv), keys: Array(warmed.keys),
-            values: Array(warmed.values), position: warmed.position)
+            conv: try warmed.conv.floatArray(), keys: try warmed.keys.floatArray(),
+            values: try warmed.values.floatArray(), position: warmed.position)
         return PreparedReference(
             generation: generation,
             embedding: embedding, pcm24kSamples: pcm24k.count,
@@ -446,6 +448,7 @@ final class TtsEngine {
     private static let streamingVocoderChunkFrames = 4
     private static let streamingConvState = 135_232
     private static let streamingKvFloats = 8 * 1 * 16 * 71 * 64
+    private static let streamingKvShape = [8, 1, 16, 71, 64]
 
     private func synthesizeApi2(text: String, language: String,
                                 speakerEmbedding: [Float]?,
@@ -519,7 +522,7 @@ final class TtsEngine {
                 "past_values": try OnnxTensor(floatData: [], shape: emptyPast),
             ])
             let state = try Qwen3TtsProtocol.PrefillState(api2Outputs: prefillOutputs, config: cfg)
-            var vocoderState = StreamingVocoderState(warmup: preparedReference?.vocoderWarmup)
+            var vocoderState = try StreamingVocoderState(warmup: preparedReference?.vocoderWarmup)
             var pendingFrames: [[Int]] = []
             var waveform: [Float] = []
             func flushPending() async throws {
@@ -618,18 +621,10 @@ final class TtsEngine {
         guard chunkFrames >= 1, !targetFrames.isEmpty else {
             throw OrtInferenceFailure.badInput("streaming vocoder requires a positive chunk and target frames")
         }
-        var state: StreamingVocoderState
-        if let warmup {
-            // Independent working copy; PreparedReference stays immutable.
-            state = StreamingVocoderState(
-                conv: Array(warmup.conv), keys: Array(warmup.keys),
-                values: Array(warmup.values), position: warmup.position)
-        } else {
-            state = StreamingVocoderState.zero()
-            if let reference = referenceCodesGroupMajor {
-                let (_, next) = try await streamingVocoderStep(groupMajor: reference, state: state)
-                state = next
-            }
+        var state = try StreamingVocoderState(warmup: warmup)
+        if warmup == nil, let reference = referenceCodesGroupMajor {
+            let (_, next) = try await streamingVocoderStep(groupMajor: reference, state: state)
+            state = next
         }
         var waveform: [Float] = []
         var offset = 0
@@ -649,24 +644,46 @@ final class TtsEngine {
         return waveform
     }
 
+    /// Turn-local vocoder state. The conv/KV tensors are the vocoder graph's
+    /// OWN outputs, fed back as the next step's inputs without a managed
+    /// copy; only the immutable `PreparedReference` snapshot stays value
+    /// typed. Commit-on-success ordering: the previous tensors stay alive
+    /// while a run reads them and are released by ARC after the new state is
+    /// validated and swapped in — no input/output aliasing inside one run.
     private struct StreamingVocoderState {
-        var conv: [Float]
-        var keys: [Float]
-        var values: [Float]
+        var conv: OnnxTensor
+        var keys: OnnxTensor
+        var values: OnnxTensor
         var position: Int64
-        init(conv: [Float], keys: [Float], values: [Float], position: Int64) {
+        init(conv: OnnxTensor, keys: OnnxTensor, values: OnnxTensor, position: Int64) {
             self.conv = conv; self.keys = keys; self.values = values; self.position = position
         }
-        init(warmup: PreparedReference.VocoderWarmup?) {
+        /// Independent working copy from the prepared snapshot; one
+        /// array->tensor copy per turn, never per step. PreparedReference
+        /// stays immutable.
+        init(warmup: PreparedReference.VocoderWarmup?) throws {
             if let warmup {
-                self.init(conv: warmup.conv, keys: warmup.keys, values: warmup.values, position: warmup.position)
-            } else { self = Self.zero() }
+                self.init(
+                    conv: try OnnxTensor(
+                        floatData: warmup.conv, shape: [TtsEngine.streamingConvState]),
+                    keys: try OnnxTensor(
+                        floatData: warmup.keys, shape: TtsEngine.streamingKvShape),
+                    values: try OnnxTensor(
+                        floatData: warmup.values, shape: TtsEngine.streamingKvShape),
+                    position: warmup.position)
+            } else { self = try Self.zero() }
         }
-        static func zero() -> StreamingVocoderState {
-            StreamingVocoderState(
-                conv: [Float](repeating: 0, count: TtsEngine.streamingConvState),
-                keys: [Float](repeating: 0, count: TtsEngine.streamingKvFloats),
-                values: [Float](repeating: 0, count: TtsEngine.streamingKvFloats),
+        static func zero() throws -> StreamingVocoderState {
+            try StreamingVocoderState(
+                conv: OnnxTensor(
+                    floatData: [Float](repeating: 0, count: TtsEngine.streamingConvState),
+                    shape: [TtsEngine.streamingConvState]),
+                keys: OnnxTensor(
+                    floatData: [Float](repeating: 0, count: TtsEngine.streamingKvFloats),
+                    shape: TtsEngine.streamingKvShape),
+                values: OnnxTensor(
+                    floatData: [Float](repeating: 0, count: TtsEngine.streamingKvFloats),
+                    shape: TtsEngine.streamingKvShape),
                 position: 0)
         }
     }
@@ -683,19 +700,13 @@ final class TtsEngine {
         for g in 0..<Qwen3TtsProtocol.numCodebooks {
             for t in 0..<frames { flat.append(Int64(groupMajor[g][t])) }
         }
-        let kvShape = [8, 1, 16, 71, 64]
-        let outputs: [String: OnnxTensor]
-        do {
-            outputs = try await runStreamingVocoderGraph(inputs: [
-                "codes": try OnnxTensor(int64Data: flat, shape: [1, Qwen3TtsProtocol.numCodebooks, frames]),
-                "conv_state": try OnnxTensor(floatData: state.conv, shape: [Self.streamingConvState]),
-                "past_keys": try OnnxTensor(floatData: state.keys, shape: kvShape),
-                "past_values": try OnnxTensor(floatData: state.values, shape: kvShape),
-                "position": try OnnxTensor(int64Data: [state.position], shape: [1]),
-            ])
-        } catch {
-            throw error
-        }
+        let outputs = try await runStreamingVocoderGraph(inputs: [
+            "codes": try OnnxTensor(int64Data: flat, shape: [1, Qwen3TtsProtocol.numCodebooks, frames]),
+            "conv_state": state.conv,
+            "past_keys": state.keys,
+            "past_values": state.values,
+            "position": try OnnxTensor(int64Data: [state.position], shape: [1]),
+        ])
         guard let wave = outputs["waveform"],
               let conv = outputs["conv_state_out"],
               let keys = outputs["present_keys"],
@@ -713,15 +724,18 @@ final class TtsEngine {
         for i in pcm.indices { pcm[i] = max(-1, min(1, pcm[i])) }
         let nextPos = try pos.int64Array()
         guard nextPos.count == 1, nextPos[0] == state.position + Int64(frames),
-              conv.shape == [Self.streamingConvState], keys.shape == kvShape, values.shape == kvShape else {
+              conv.shape == [Self.streamingConvState], keys.shape == Self.streamingKvShape,
+              values.shape == Self.streamingKvShape else {
             throw OrtInferenceFailure.protocolMismatch("streaming vocoder state shape or position is invalid")
         }
-        let next = StreamingVocoderState(
-            conv: try conv.floatArray(), keys: try keys.floatArray(),
-            values: try values.floatArray(), position: nextPos[0])
-        guard next.conv.allSatisfy(\.isFinite), next.keys.allSatisfy(\.isFinite), next.values.allSatisfy(\.isFinite) else {
+        // Finiteness gate over the ~5.2 MB state, scanned in place — the old
+        // path materialized three arrays just to check them.
+        guard try conv.withFloatBuffer({ $0.allSatisfy(\.isFinite) }),
+              try keys.withFloatBuffer({ $0.allSatisfy(\.isFinite) }),
+              try values.withFloatBuffer({ $0.allSatisfy(\.isFinite) }) else {
             throw OrtInferenceFailure.badOutput("streaming vocoder produced non-finite state")
         }
+        let next = StreamingVocoderState(conv: conv, keys: keys, values: values, position: nextPos[0])
         return (pcm, next)
     }
 
@@ -832,6 +846,11 @@ final class TtsEngine {
         var allCodes: [[Int]] = []
         let H = config.hiddenSize
         let trailingRows = trailing.count / H  // text rows + final tts_eos row
+        // Zero-element past, reused by every frame's first code-predictor
+        // group (inputs are read in place, never consumed by a run).
+        let cpEmptyPast = try OnnxTensor(
+            floatData: [],
+            shape: [config.cpLayers, 1, config.cpKvHeads, 0, config.cpHeadDim])
 
         for step in 0..<maxFrames {
             // Each frame is one cancellation checkpoint (16 code-predictor +
@@ -851,11 +870,12 @@ final class TtsEngine {
             if g0 == config.codecEosId { break }
             generated.append(g0)
 
-            // Code predictor: groups 1..15, fresh KV per frame.
+            // Code predictor: groups 1..15, fresh KV per frame. Each group's
+            // present_* output tensor is the next group's past input.
             var frame = [Int](repeating: 0, count: Qwen3TtsProtocol.numCodebooks)
             frame[0] = g0
-            var cpKeys: [Float] = []
-            var cpValues: [Float] = []
+            var cpKeys: OnnxTensor?
+            var cpValues: OnnxTensor?
             var cpPastLen = 0
             for g in 1..<Qwen3TtsProtocol.numCodebooks {
                 let cpInput: [Float]
@@ -874,12 +894,8 @@ final class TtsEngine {
                         floatData: cpInput, shape: [1, cpInputSeq, H]),
                     "generation_steps": try OnnxTensor(
                         int64Data: [Int64(g - 1)], shape: [1]),
-                    "past_keys": try OnnxTensor(
-                        floatData: cpKeys,
-                        shape: [config.cpLayers, 1, config.cpKvHeads, cpPastLen, config.cpHeadDim]),
-                    "past_values": try OnnxTensor(
-                        floatData: cpValues,
-                        shape: [config.cpLayers, 1, config.cpKvHeads, cpPastLen, config.cpHeadDim]),
+                    "past_keys": cpKeys ?? cpEmptyPast,
+                    "past_values": cpValues ?? cpEmptyPast,
                 ])
                 guard let cpLogits = cpOutputs["logits"] else {
                     throw OrtInferenceFailure.missingOutput(
@@ -895,9 +911,9 @@ final class TtsEngine {
                     logits: cpSlice, config: config,
                     temperature: temperature, topK: topK, random: &generator)
                 frame[g] = token
-                cpKeys = try readKv(cpOutputs, name: "present_keys", expected: [
+                cpKeys = try kvTensor(cpOutputs, name: "present_keys", expected: [
                     config.cpLayers, 1, config.cpKvHeads, cpPastLen + cpInputSeq, config.cpHeadDim])
-                cpValues = try readKv(cpOutputs, name: "present_values", expected: [
+                cpValues = try kvTensor(cpOutputs, name: "present_values", expected: [
                     config.cpLayers, 1, config.cpKvHeads, cpPastLen + cpInputSeq, config.cpHeadDim])
                 cpPastLen += cpInputSeq
             }
@@ -917,7 +933,8 @@ final class TtsEngine {
                 for j in 0..<H { next[j] += ttsPad[j] }
             }
 
-            // One decode step.
+            // One decode step. The previous run's own present_* tensors are
+            // the past inputs — no managed KV copy per step.
             let totalLen = pastLen + 1
             let position = Int64(state.seqLen + step)
             let decodeInputs: [String: OnnxTensor] = [
@@ -926,12 +943,8 @@ final class TtsEngine {
                     int64Data: Array(repeating: 1, count: totalLen), shape: [1, totalLen]),
                 "position_ids": try OnnxTensor(
                     int64Data: [position, position, position], shape: [3, 1, 1]),
-                "past_keys": try OnnxTensor(
-                    floatData: pastKeys,
-                    shape: [config.numLayers, 1, config.numKvHeads, pastLen, config.headDim]),
-                "past_values": try OnnxTensor(
-                    floatData: pastValues,
-                    shape: [config.numLayers, 1, config.numKvHeads, pastLen, config.headDim]),
+                "past_keys": pastKeys,
+                "past_values": pastValues,
             ]
             let decOutputs: [String: OnnxTensor]
             if unifiedTalker {
@@ -952,9 +965,11 @@ final class TtsEngine {
                 throw OrtInferenceFailure.protocolMismatch(
                     "decode hidden size \(hidden.count) != \(H)")
             }
-            pastKeys = try readKv(decOutputs, name: "present_keys", expected: [
+            // Validate each output before reuse. A rejection unwinds this turn
+            // and releases its local tensors; partial state is never resumed.
+            pastKeys = try kvTensor(decOutputs, name: "present_keys", expected: [
                 config.numLayers, 1, config.numKvHeads, totalLen, config.headDim])
-            pastValues = try readKv(decOutputs, name: "present_values", expected: [
+            pastValues = try kvTensor(decOutputs, name: "present_values", expected: [
                 config.numLayers, 1, config.numKvHeads, totalLen, config.headDim])
             pastLen = totalLen
         }
@@ -993,8 +1008,14 @@ final class TtsEngine {
         return waveform
     }
 
-    private func readKv(_ outputs: [String: OnnxTensor], name: String,
-                        expected: [Int]) throws -> [Float] {
+    /// Validates a runtime KV output and returns the OWNED tensor for reuse as
+    /// the next step's past input. No tensor data is copied: the graph's own
+    /// output ORTValue stays native until the following run's outputs replace
+    /// it (released by ARC after the validated swap). Validation order and
+    /// error codes match the former readKv + floatArray path: presence →
+    /// exact shape → float dtype.
+    private func kvTensor(_ outputs: [String: OnnxTensor], name: String,
+                          expected: [Int]) throws -> OnnxTensor {
         guard let tensor = outputs[name] else {
             throw OrtInferenceFailure.missingOutput(name, expected: [name])
         }
@@ -1002,7 +1023,8 @@ final class TtsEngine {
             throw OrtInferenceFailure.protocolMismatch(
                 "KV tensor '\(name)' shape \(tensor.shape) != expected \(expected)")
         }
-        return try tensor.floatArray()
+        try tensor.requireFloat()
+        return tensor
     }
 
     private func runGraph(role: String,
@@ -1483,8 +1505,12 @@ enum Qwen3TtsProtocol {
     struct PrefillState {
         let logits: [Float]
         let hidden: [Float]
-        let pastKeys: [Float]    // stacked [layers, 1, kvHeads, seqLen, headDim]
-        let pastValues: [Float]
+        /// Owned ORT KV tensors fed straight into the next talker run. The
+        /// decode graph's present_* output tensor IS the next step's past_*
+        /// input — KV never crosses into a managed array during the loop
+        /// (same ownership discipline as Android TtsApi2Runtime.TalkerState).
+        let pastKeys: OnnxTensor    // stacked [layers, 1, kvHeads, seqLen, headDim]
+        let pastValues: OnnxTensor
         let seqLen: Int
 
         init(outputs: [String: OnnxTensor], config: Qwen3TtsConfig) throws {
@@ -1518,8 +1544,16 @@ enum Qwen3TtsProtocol {
                 keys += try key.floatArray()
                 values += try value.floatArray()
             }
-            pastKeys = keys
-            pastValues = values
+            // API1 prefill emits per-layer KV but the decode graph consumes a
+            // single stacked tensor, so this ONE stacking copy per turn is
+            // forced by the graph boundary. Every later step reuses the same
+            // input tensor instead of re-wrapping the arrays per run.
+            pastKeys = try OnnxTensor(
+                floatData: keys,
+                shape: [config.numLayers, 1, config.numKvHeads, seqLen, config.headDim])
+            pastValues = try OnnxTensor(
+                floatData: values,
+                shape: [config.numLayers, 1, config.numKvHeads, seqLen, config.headDim])
         }
 
         init(api2Outputs: [String: OnnxTensor], config: Qwen3TtsConfig) throws {
@@ -1550,8 +1584,15 @@ enum Qwen3TtsProtocol {
                     "API2 KV shape \(keysTensor.shape) != \(expectedKv)")
             }
             seqLen = total
-            pastKeys = try keysTensor.floatArray()
-            pastValues = try valuesTensor.floatArray()
+            // The pre-change path materialized via floatArray(), whose dtype
+            // gate is kept explicit so a malformed non-float KV tensor still
+            // fails fast here instead of surfacing later inside the decode run.
+            try keysTensor.requireFloat()
+            try valuesTensor.requireFloat()
+            // Zero copy: the validated output tensors are kept and fed back as
+            // the first decode step's past inputs.
+            pastKeys = keysTensor
+            pastValues = valuesTensor
         }
     }
 
@@ -1846,11 +1887,20 @@ enum Qwen3TtsProtocol {
     }
 
     /// [1, T, 128] log-mel frontend (n_fft 1024, hop 256, slaney norm).
+    /// Magnitude is computed once per (frame, bin) — the mel loop reuses it
+    /// in the same k-ascending order, so the Float output is bit-identical
+    /// to the per-(mel, bin) sqrt formulation. re/im/mag are fully rewritten
+    /// every frame, so the hoisted buffers carry no state between frames.
     static func logMelSpectrogram(_ audio: [Float], sampleRate: Int) -> LogMelResult {
         let nFft = 1024
         let hop = 256
         let nMels = 128
-        precondition(audio.count >= 2, "reference audio too short for mel frontend")
+        // frames = 1 + (audio.count + 2*pad - nFft) / hop is only >= 1 when
+        // audio.count >= nFft - 2*pad == hop; below that the frame loop would
+        // over-read the padded buffer (the production call site in
+        // extractSpeakerEmbedding already rejects < 1024 samples with a
+        // proper badInput error, so this is a hard invariant).
+        precondition(audio.count >= hop, "reference audio too short for mel frontend")
         let pad = (nFft - hop) / 2
         var padded = [Float](repeating: 0, count: audio.count + 2 * pad)
         for i in padded.indices {
@@ -1865,19 +1915,23 @@ enum Qwen3TtsProtocol {
         }
         var out = [Float](repeating: 0, count: frames * nMels)
         let nFreqs = nFft / 2 + 1
+        var re = [Double](repeating: 0, count: nFft)
+        var im = [Double](repeating: 0, count: nFft)
+        var mag = [Double](repeating: 0, count: nFreqs)
         for f in 0..<frames {
             let start = f * hop
-            var re = [Double](repeating: 0, count: nFft)
-            var im = [Double](repeating: 0, count: nFft)
             for i in 0..<nFft {
                 re[i] = Double(padded[start + i] * Float(window[i]))
+                im[i] = 0
             }
             fftRadix2(&re, &im)
+            for k in 0..<nFreqs {
+                mag[k] = (re[k] * re[k] + im[k] * im[k] + 1e-9).squareRoot()
+            }
             for m in 0..<nMels {
                 var energy = 0.0
                 for k in 0..<nFreqs {
-                    let mag = (re[k] * re[k] + im[k] * im[k] + 1e-9).squareRoot()
-                    energy += Double(basis[m * nFreqs + k]) * mag
+                    energy += Double(basis[m * nFreqs + k]) * mag[k]
                 }
                 out[f * nMels + m] = Float(log(max(energy, 1e-5)))
             }

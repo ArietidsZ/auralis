@@ -88,7 +88,7 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VoiceProfileScreen(onBack: () -> Unit) {
+fun VoiceProfileScreen(reduceMotion: Boolean, onBack: () -> Unit) {
     val appContext = LocalContext.current.applicationContext as DialectApp
     val repository = appContext.container.voiceProfileRepository
     val scope = rememberCoroutineScope()
@@ -261,6 +261,7 @@ fun VoiceProfileScreen(onBack: () -> Unit) {
         RecordSheet(
             recorder = recorder,
             amplitudeProvider = { amplitude },
+            reduceMotion = reduceMotion,
             onMessage = { message -> scope.launch { snackbar.showSnackbar(message) } },
             onSaved = {
                 showRecordSheet = false
@@ -276,6 +277,7 @@ fun VoiceProfileScreen(onBack: () -> Unit) {
 private fun RecordSheet(
     recorder: AudioRecorder,
     amplitudeProvider: () -> Float,
+    reduceMotion: Boolean,
     onMessage: (String) -> Unit,
     onSaved: () -> Unit,
     onDismiss: () -> Unit,
@@ -364,6 +366,7 @@ private fun RecordSheet(
                 WaveformVisualizer(
                     amplitude = if (isRecording) amplitude else amplitudeProvider(),
                     isActive = isRecording,
+                    reduceMotion = reduceMotion,
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                 )
                 Spacer(Modifier.height(16.dp))

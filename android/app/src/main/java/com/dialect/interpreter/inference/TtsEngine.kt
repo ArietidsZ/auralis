@@ -405,9 +405,16 @@ object Qwen3TtsProtocol {
         System.arraycopy(logitsLast, logitsLast.size - vocab, probs, 0, vocab)
         require(probs.all { it.isFinite() || it == Float.NEGATIVE_INFINITY }) { "Invalid talker logits" }
         if (suppressEos) probs[cfg.codecEosId] = Float.NEGATIVE_INFINITY
-        for (token in generated.toSet()) {
+        // Each distinct generated token is penalized exactly once; the seen
+        // mask replaces the per-call HashSet without changing the outcome
+        // (penalty application is per-index, so order is irrelevant).
+        val penalized = BooleanArray(vocab)
+        for (token in generated) {
             require(token in probs.indices) { "Invalid generated codec token" }
-            if (probs[token] > 0f) probs[token] /= repetitionPenalty else probs[token] *= repetitionPenalty
+            if (!penalized[token]) {
+                penalized[token] = true
+                if (probs[token] > 0f) probs[token] /= repetitionPenalty else probs[token] *= repetitionPenalty
+            }
         }
         for (i in cfg.cpVocab until vocab) {
             if (i != cfg.codecEosId) probs[i] = Float.NEGATIVE_INFINITY
@@ -446,7 +453,7 @@ object Qwen3TtsProtocol {
         require(maxLogit.isFinite()) { "No finite sampling candidate remains" }
         if (temperature == 0f || topK == 1) return best
         if (topK in 1 until probs.size) {
-            val threshold = probs.copyOf().sortedDescending()[topK - 1]
+            val threshold = kthLargestFloat(probs, topK)
             for (i in probs.indices) if (probs[i] < threshold) probs[i] = Float.NEGATIVE_INFINITY
         }
         // Subtract the finite maximum before temperature scaling. Double
@@ -463,6 +470,63 @@ object Qwen3TtsProtocol {
             if (r < cum) return i
         }
         return weights.indices.last { weights[it] > 0.0 }
+    }
+
+    /**
+     * Exact k-th largest value of a multiset — the value
+     * `values.copyOf().sortedDescending()[k - 1]` selects — without copying
+     * or sorting [values]. Selecting the k-th largest equals selecting the
+     * (n-k+1)-th smallest, so a bounded heap over whichever side is smaller
+     * does the job in O(n log min(k, n-k+1)). Comparisons only, no arithmetic
+     * on the values, so the result equals the sorted reference for every
+     * value — except possibly the sign of a zero when the input mixes -0.0f
+     * and 0.0f (the heap compares IEEE; a boxed sort may total-order them).
+     * That sign cannot change sampling behavior: the mask test
+     * `x < threshold` treats both zero signs alike and exp(±0.0) are equal.
+     * Inputs must not contain NaN (the sampler rejects NaN logits first).
+     */
+    internal fun kthLargestFloat(values: FloatArray, k: Int): Float {
+        require(values.isNotEmpty()) { "kth largest requires a nonempty array" }
+        require(k in 1..values.size) { "kth largest order $k outside 1..${values.size}" }
+        val keepLargest = k <= values.size - k + 1
+        val capacity = if (keepLargest) k else values.size - k + 1
+        val heap = FloatArray(capacity)
+        var size = 0
+        for (x in values) {
+            if (size < capacity) {
+                // Sift-up insert.
+                var i = size++
+                heap[i] = x
+                while (i > 0) {
+                    val parent = (i - 1) / 2
+                    val ordered = if (keepLargest) heap[parent] <= heap[i] else heap[parent] >= heap[i]
+                    if (ordered) break
+                    val tmp = heap[parent]; heap[parent] = heap[i]; heap[i] = tmp
+                    i = parent
+                }
+            } else if (if (keepLargest) x > heap[0] else x < heap[0]) {
+                // Replace the boundary entry and restore the heap invariant.
+                heap[0] = x
+                var i = 0
+                while (true) {
+                    val left = 2 * i + 1
+                    val right = left + 1
+                    var best = i
+                    if (left < size) {
+                        val betterLeft = if (keepLargest) heap[left] < heap[best] else heap[left] > heap[best]
+                        if (betterLeft) best = left
+                    }
+                    if (right < size) {
+                        val betterRight = if (keepLargest) heap[right] < heap[best] else heap[right] > heap[best]
+                        if (betterRight) best = right
+                    }
+                    if (best == i) break
+                    val tmp = heap[best]; heap[best] = heap[i]; heap[i] = tmp
+                    i = best
+                }
+            }
+        }
+        return heap[0]
     }
 
     // ---- Audio frontend (exact PyTorch-style mel, verified vs librosa) ------
@@ -525,7 +589,11 @@ object Qwen3TtsProtocol {
         val nFft = 1024
         val hop = 256
         val nMels = 128
-        if (audio.size < 2) {
+        // The reflect-padded signal must cover one full FFT window, otherwise
+        // the frame loop reads past the padded array (AIOOBE). Minimum:
+        // audio.size >= nFft - 2*pad == hop. Input shorter than one hop is
+        // rejected cleanly instead of crashing.
+        if (audio.size < hop) {
             throw IllegalArgumentException("reference audio too short for mel frontend")
         }
         val pad = (nFft - hop) / 2
@@ -540,6 +608,7 @@ object Qwen3TtsProtocol {
         val re = DoubleArray(nFft)
         val im = DoubleArray(nFft)
         val nFreqs = nFft / 2 + 1
+        val mag = DoubleArray(nFreqs)
         for (f in 0 until frames) {
             val start = f * hop
             for (i in 0 until nFft) {
@@ -547,11 +616,16 @@ object Qwen3TtsProtocol {
                 im[i] = 0.0
             }
             fftRadix2(re, im)
+            // Magnitude once per bin; every mel band reuses it. The expression
+            // and the band-accumulation order are unchanged, so the output is
+            // bit-identical to the per-band recomputation.
+            for (k in 0 until nFreqs) {
+                mag[k] = kotlin.math.sqrt(re[k] * re[k] + im[k] * im[k] + 1e-9)
+            }
             for (m in 0 until nMels) {
                 var energy = 0.0
                 for (k in 0 until nFreqs) {
-                    val mag = kotlin.math.sqrt(re[k] * re[k] + im[k] * im[k] + 1e-9)
-                    energy += basis[m * nFreqs + k] * mag
+                    energy += basis[m * nFreqs + k] * mag[k]
                 }
                 out[f * nMels + m] = max(energy, 1e-5).let(::ln).toFloat()
             }
@@ -573,14 +647,17 @@ object Qwen3TtsProtocol {
                 t = im[i]; im[i] = im[j]; im[j] = t
             }
         }
+        val twiddles = twiddlesFor(n)
+        val cosT = twiddles.cos
+        val sinT = twiddles.sin
         var size = 2
+        var twOff = 0
         while (size <= n) {
             val half = size / 2
-            val angle = -2.0 * PI / size
             for (i in 0 until n step size) {
                 for (k in 0 until half) {
-                    val c = kotlin.math.cos(angle * k)
-                    val s = kotlin.math.sin(angle * k)
+                    val c = cosT[twOff + k]
+                    val s = sinT[twOff + k]
                     val tReal = c * re[i + k + half] - s * im[i + k + half]
                     val tImag = s * re[i + k + half] + c * im[i + k + half]
                     re[i + k + half] = re[i + k] - tReal
@@ -589,7 +666,44 @@ object Qwen3TtsProtocol {
                     im[i + k] += tImag
                 }
             }
+            twOff += half
             size *= 2
+        }
+    }
+
+    // ---- FFT twiddle cache -----------------------------------------------------
+    // cos(-2*pi*k/size) / sin(...) were recomputed for every butterfly block of
+    // every frame; the values depend only on (n, size, k), so they are built
+    // once per FFT size with the exact same expressions (bit-identical to the
+    // inline computation) and reused. One immutable @Volatile holder keeps the
+    // (n, cos, sin) triple consistent for concurrent readers.
+
+    private class TwiddleTable(val n: Int, val cos: DoubleArray, val sin: DoubleArray)
+
+    private val twiddleLock = Any()
+    @Volatile private var twiddleTable = TwiddleTable(0, DoubleArray(0), DoubleArray(0))
+
+    private fun twiddlesFor(n: Int): TwiddleTable {
+        twiddleTable.let { if (it.n == n) return it }
+        synchronized(twiddleLock) {
+            if (twiddleTable.n != n) {
+                val cosT = DoubleArray(n - 1)
+                val sinT = DoubleArray(n - 1)
+                var off = 0
+                var size = 2
+                while (size <= n) {
+                    val half = size / 2
+                    val angle = -2.0 * PI / size
+                    for (k in 0 until half) {
+                        cosT[off + k] = kotlin.math.cos(angle * k)
+                        sinT[off + k] = kotlin.math.sin(angle * k)
+                    }
+                    off += half
+                    size *= 2
+                }
+                twiddleTable = TwiddleTable(n, cosT, sinT)
+            }
+            return twiddleTable
         }
     }
 
@@ -1277,8 +1391,11 @@ class TtsEngine(
                         "past_values" to valuesTensor,
                     )).use { cpResult ->
                         val cpLogits = readFloatOutput(cpResult, "logits")
+                        // sampleCodePredictor copies the trailing cpVocab logits
+                        // itself; pass the full array (the pre-slice was a
+                        // redundant per-step copy).
                         val token = Qwen3TtsProtocol.sampleCodePredictor(
-                            cpLogits.copyOfRange(cpLogits.size - cfg.cpVocab, cpLogits.size),
+                            cpLogits,
                             cfg, Qwen3TtsProtocol.TEMPERATURE, Qwen3TtsProtocol.TOP_K, random)
                         frame[g] = token
                         val shape = intArrayOf(

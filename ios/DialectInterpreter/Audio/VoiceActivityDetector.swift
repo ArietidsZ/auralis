@@ -20,11 +20,12 @@ final class VoiceActivityDetector {
     private var state: State = .silence
     private var speechStartTime: Int64 = 0
     private var silenceStartTime: Int64 = 0
-    private var audioClockMs: Int64 = 0
+    private var audioClockSamples: Int64 = 0
     private var energySmoothed: Float = 0
 
     /// Process an audio chunk and return VAD result.
-    func process(audioChunk: [Float], chunkDurationMs: Int64 = 200) -> VadResult {
+    func process(audioChunk: [Float], sampleRate: Int = 16000) -> VadResult {
+        precondition(sampleRate > 0)
         guard !audioChunk.isEmpty else {
             return VadResult(
                 isSpeech: state == .speech || state == .trailingSilence,
@@ -44,7 +45,7 @@ final class VoiceActivityDetector {
         energySmoothed = 0.7 * energySmoothed + 0.3 * rms
 
         let isSpeech = energySmoothed > Self.energyThreshold
-        let now = audioClockMs
+        let now = audioClockSamples * 1000 / Int64(sampleRate)
         var utteranceComplete = false
 
         switch state {
@@ -70,7 +71,7 @@ final class VoiceActivityDetector {
             }
         }
 
-        audioClockMs += max(chunkDurationMs, 1)
+        audioClockSamples += Int64(audioChunk.count)
 
         return VadResult(
             isSpeech: state == .speech || state == .trailingSilence,
@@ -84,7 +85,7 @@ final class VoiceActivityDetector {
         state = .silence
         speechStartTime = 0
         silenceStartTime = 0
-        audioClockMs = 0
+        audioClockSamples = 0
         energySmoothed = 0
     }
 }

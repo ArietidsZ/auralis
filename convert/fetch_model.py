@@ -27,26 +27,34 @@ from urllib.request import urlopen
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "convert"))
 from manifest_contract import ArgParser, ContractError, load_manifest_v2, validate_rel_path, STQ_TRANSFORM, verify_build_record
+from file_integrity import CHUNK, copy_with_digest, sha256_of
 
 EXIT_OK, EXIT_FAIL, EXIT_ENV, EXIT_CONTRACT, EXIT_ARGS = 0, 1, 2, 3, 4
 DEFAULT_DEST = REPO_ROOT / "models"
-CHUNK = 1024 * 1024
 
 
 class IntegrityError(ValueError):
     pass
 
 
-def apply_source_transform(manifest: dict, staged: Path, allow_derived: bool) -> None:
+def apply_source_transform(manifest: dict, staged: Path, allow_derived: bool,
+                           staged_digest: str | None = None) -> str | None:
+    """Run the audited STQ transform when staged bytes are the upstream input.
+
+    staged_digest is the digest measured while the file was materialized;
+    only a caller that could not measure in flight pays a re-read here.
+    Returns the measured digest of the transformed output, or None when the
+    staged bytes already are what the pinned-hash gate must verify.
+    """
     transform = manifest["source"].get("transform")
     if transform is None:
-        return
+        return None
     if transform["id"] != STQ_TRANSFORM:
         raise IntegrityError("unsupported source transform")
     expected_output = manifest["files"][0]["sha256"]
-    actual = sha256_of(staged)
+    actual = staged_digest if staged_digest is not None else sha256_of(staged)
     if allow_derived and actual == expected_output:
-        return  # An already derived local bundle still has to match exactly.
+        return None  # An already derived local bundle still has to match exactly.
     if actual != transform["inputSha256"]:
         raise IntegrityError("transform input SHA-256 differs from audited upstream artifact")
     script = REPO_ROOT / "android/app/src/main/cpp/hymt_jni/tools/fix_stq_type_id.py"
@@ -59,9 +67,16 @@ def apply_source_transform(manifest: dict, staged: Path, allow_derived: bool) ->
             raise IntegrityError(f"audited STQ transform failed: {result.stderr[-1500:]}")
         os.replace(output, staged)
         print(f"derived {staged.name}: {actual} -> {expected_output}")
+        return expected_output
 
 
-def _download_archive(url: str, dest: Path, expected_size: int) -> None:
+def _download_archive(url: str, dest: Path, expected_size: int) -> str:
+    """Stream the pinned archive to dest, hashing the bytes in flight.
+
+    Returns the digest of the written archive; the whole-archive
+    verification completes here, before any member is extracted.
+    """
+    digest = hashlib.sha256()
     with urlopen(url, timeout=60) as response, dest.open("xb") as target:
         if response.url.split(":", 1)[0] != "https":
             raise IntegrityError("archive redirect left HTTPS")
@@ -70,25 +85,43 @@ def _download_archive(url: str, dest: Path, expected_size: int) -> None:
             total += len(chunk)
             if total > expected_size:
                 raise IntegrityError("archive exceeds pinned size")
+            digest.update(chunk)
             target.write(chunk)
+    if total != expected_size:
+        raise IntegrityError("archive size or SHA-256 does not match its pinned source")
+    return digest.hexdigest()
 
 
-def extract_archive(manifest: dict, archive_path: Path, staging: Path) -> None:
+def extract_archive(manifest: dict, archive_path: Path, staging: Path,
+                    verified_digest: str | None = None) -> dict[str, str]:
     """Verify the whole archive, then copy only manifest-listed regular files.
 
     No extractall, links, absolute paths, traversal, or duplicate destinations.
     The archive's tests/docs never become part of the installed model package.
+
+    The whole archive is authenticated before tarfile parses a single byte:
+    the download pass verified the digest in flight, or a local --archive is
+    hashed here — a mismatched archive never reaches extraction. Each
+    member's own bytes are hashed while it is written, and the returned
+    per-file digests are what install() compares against the manifest pins —
+    staged files are never re-read. Nothing is promoted here; the caller
+    only swaps staging in after every digest matches its pin.
     """
     archive = manifest["source"]["archive"]
     if archive_path.is_symlink() or not archive_path.is_file():
         raise IntegrityError("archive must be a regular file")
-    if archive_path.stat().st_size != archive["sizeBytes"] or sha256_of(archive_path) != archive["sha256"]:
+    if archive_path.stat().st_size != archive["sizeBytes"]:
+        raise IntegrityError("archive size or SHA-256 does not match its pinned source")
+    if verified_digest is not None and verified_digest != archive["sha256"]:
+        raise IntegrityError("archive size or SHA-256 does not match its pinned source")
+    if verified_digest is None and sha256_of(archive_path) != archive["sha256"]:
         raise IntegrityError("archive size or SHA-256 does not match its pinned source")
     prefix = archive["stripPrefix"] + "/"
     pkg_prefix = manifest["packageId"] + "/"
     wanted = {entry["path"].removeprefix(pkg_prefix): entry for entry in manifest["files"]}
     found = set()
-    with tarfile.open(archive_path, "r|*") as source:
+    digests: dict[str, str] = {}
+    with archive_path.open("rb") as raw, tarfile.open(fileobj=raw, mode="r|*") as source:
         for member in source:
             name = member.name.rstrip("/") if member.isdir() else member.name
             try:
@@ -110,25 +143,28 @@ def extract_archive(manifest: dict, archive_path: Path, staging: Path) -> None:
                 raise IntegrityError(f"archive member size mismatch: {name}")
             target = staging / rel
             target.parent.mkdir(parents=True, exist_ok=True)
+            digest = hashlib.sha256()
+            total = 0
             with source.extractfile(member) as reader, target.open("xb") as writer:
-                shutil.copyfileobj(reader, writer, CHUNK)
+                while chunk := reader.read(CHUNK):
+                    digest.update(chunk)
+                    writer.write(chunk)
+                    total += len(chunk)
+            if expected is not None and total != expected:
+                raise IntegrityError(f"archive member size mismatch: {name}")
+            digests[rel] = digest.hexdigest()
+            if digests[rel] != wanted[rel]["sha256"]:
+                raise IntegrityError(f"archive member sha256 mismatch: {name}")
     if found != set(wanted):
         raise IntegrityError(f"archive missing allow-listed files: {sorted(set(wanted) - found)}")
+    return digests
 
 
-def sha256_of(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for chunk in iter(lambda: source.read(CHUNK), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def _download_to(repo_id: str, revision: str, repo_file: str, dest: Path) -> None:
+def _download_to(repo_id: str, revision: str, repo_file: str, dest: Path) -> tuple[int, str]:
     from huggingface_hub import hf_hub_download
     cached = Path(hf_hub_download(repo_id=repo_id, filename=repo_file, revision=revision))
     dest.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(cached, dest)
+    return copy_with_digest(cached, dest)
 
 
 def check_no_symlink_escape(dest_root: Path, package_root: Path) -> None:
@@ -215,15 +251,16 @@ def install(manifest: dict, root: Path, local_source: Path | None, local_archive
     try:
         staging.mkdir(parents=True)
         from_archive = local_source is None and manifest["source"].get("archive") is not None
+        digests: dict[str, str] = {}
         if from_archive:
             if local_archive is not None:
-                extract_archive(manifest, local_archive, staging)
+                digests = extract_archive(manifest, local_archive, staging)
             else:
                 with tempfile.TemporaryDirectory(prefix=f"{package_id}-archive-", dir=staging.parent) as directory:
                     archive_path = Path(directory) / "source.tar"
                     source = manifest["source"]["archive"]
-                    _download_archive(source["url"], archive_path, source["sizeBytes"])
-                    extract_archive(manifest, archive_path, staging)
+                    verified = _download_archive(source["url"], archive_path, source["sizeBytes"])
+                    digests = extract_archive(manifest, archive_path, staging, verified_digest=verified)
         for entry in manifest["files"]:
             relative = entry["path"].removeprefix(package_id + "/")
             staged_path = staging / relative
@@ -237,11 +274,13 @@ def install(manifest: dict, root: Path, local_source: Path | None, local_archive
                     check_no_symlink_escape(local_source, source)
                     if not source.is_file():
                         raise FileNotFoundError(source)
-                    shutil.copyfile(source, staged_path)
+                    measured = copy_with_digest(source, staged_path)
                 elif not from_archive:
                     source_name = manifest["source"].get("transform", {}).get("inputPath", relative)
-                    _download_to(manifest["source"]["repoId"], manifest["source"]["revision"],
-                                 source_name, staged_path)
+                    measured = _download_to(manifest["source"]["repoId"], manifest["source"]["revision"],
+                                            source_name, staged_path)
+                else:
+                    measured = (staged_path.stat().st_size, digests[relative])
             except FileExistsError:
                 raise
             except Exception as exc:
@@ -250,19 +289,28 @@ def install(manifest: dict, root: Path, local_source: Path | None, local_archive
             if not staged_path.is_file() or staged_path.is_symlink():
                 print(f"acquisition did not produce a regular file: {relative}", file=sys.stderr)
                 return EXIT_FAIL
-            apply_source_transform(manifest, staged_path, allow_derived=local_source is not None)
+            transformed = apply_source_transform(manifest, staged_path,
+                                                 allow_derived=local_source is not None,
+                                                 staged_digest=measured[1])
             actual_size = staged_path.stat().st_size
             if actual_size <= 0 or (entry.get("sizeBytes") is not None and entry["sizeBytes"] != actual_size):
                 print(f"integrity failure: {relative} size {actual_size} != {entry.get('sizeBytes')}", file=sys.stderr)
                 return EXIT_FAIL
-            actual_hash = sha256_of(staged_path)
+            # The digest was measured while the final staged bytes were
+            # produced (copy, extraction, or transform); no re-read here.
+            actual_hash = measured[1] if transformed is None else transformed
             if actual_hash != entry["sha256"]:
                 print(f"integrity failure: {relative} sha256 {actual_hash} != {entry['sha256']}", file=sys.stderr)
                 return EXIT_FAIL
             entry["sizeBytes"] = actual_size
             with staged_path.open("rb") as source:
                 os.fsync(source.fileno())
-        verify_build_record(manifest, staging)
+        try:
+            verify_build_record(manifest, staging)
+        except ContractError as exc:
+            # The staged bundle contradicts its audited build record: an
+            # integrity failure (matching validate_models), not a contract error.
+            raise IntegrityError(f"build provenance does not match the staged package: {exc}") from exc
         # Manifest and files move together. The shared source manifest is
         # never promoted to verified and need not be writable for an install.
         write_json(staging / "manifest.json", manifest)
@@ -336,9 +384,22 @@ def main(argv: list[str] | None = None) -> int:
                 if args.asset_pack else args.dest)
         root.mkdir(parents=True, exist_ok=True)
         with package_lease(root, args.package):
+            # install() fills every entry's measured size, so detect pending
+            # backfill work before it runs: --update-manifest is an explicit
+            # request, but with nothing to backfill it is a no-op.
+            backfill_pending = args.update_manifest and any(
+                entry.get("sizeBytes") is None for entry in manifest["files"])
             code = install(manifest, root, args.local_source, args.archive)
-            if code == EXIT_OK and args.update_manifest:
-                write_json(manifest_path, manifest)
+            if code == EXIT_OK and backfill_pending:
+                try:
+                    write_json(manifest_path, manifest)
+                except OSError as exc:
+                    # The verified package is already swapped in and stays;
+                    # the requested update itself failed and must be reported
+                    # as a failure, not as a successful install.
+                    print(f"package installed, but the requested manifest update failed: {exc}",
+                          file=sys.stderr)
+                    return EXIT_ENV
             return code
     except ContractError as exc:
         print(f"contract error: {exc}", file=sys.stderr)

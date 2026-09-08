@@ -1,0 +1,85 @@
+{
+  "unit_tests": {
+    "tests": 169,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  },
+  "build": "testDebugUnitTest assembleDebug: BUILD SUCCESSFUL in 23s",
+  "lint": "Environment blocked: missing cached lint POM metadata; Google Maven TLS download failure; temporary artifact fallback lacks transitive classes. No dependency changes.",
+  "apk_sha256": "eb6c555a927bea5ec10a930dc6fa3d1d1be6641ae1361b2687fc78e573bb7bca",
+  "device": "API 35 arm64 AVD, emulator-5580; separate empty userdata",
+  "screenshots": [
+    {
+      "name": "large-text-settings.png",
+      "sha256": "d0650547cd0d3de1d1542728c0f963915a273b193caac7f5b5e527a118a4c826"
+    },
+    {
+      "name": "reduced-motion-back.png",
+      "sha256": "b2f6a1850cc2dd004c20ea2e836a62ad31023d2f71d00c08141fb138525fd7d3"
+    },
+    {
+      "name": "large-text-interpret.png",
+      "sha256": "1141297b482ca52c6d0e15ca3964b220e1bfd3f96704ff7ec5fbb0862f0b51ee"
+    },
+    {
+      "name": "normal-settings.png",
+      "sha256": "34713f42b93e365ab19bae43fed86d5d9d96f6e6e42c2e4317e4a590ed932f55"
+    },
+    {
+      "name": "reduced-motion-settings.png",
+      "sha256": "a83d3aa7077e581481e41014b05e9802df6355e3a21e85e214db0678f5fad7c9"
+    },
+    {
+      "name": "reduced-motion-interpret.png",
+      "sha256": "e16fe2e5c7277decde43c4fb9d2e2d5f864169151f4e0da4805bfa1eebf61f19"
+    },
+    {
+      "name": "normal-interpret.png",
+      "sha256": "90a8dbc519ba1fc07457575206b1afde997900553209f3558cdceab8415e1bfa"
+    }
+  ],
+  "ui_checks": [
+    "normal interpretation and Settings navigation",
+    "200% font interpretation and Settings layout",
+    "system Settings background/return with animator scale zero",
+    "reduced-motion forward and back Settings navigation",
+    "missing-model record action remains disabled"
+  ],
+  "limitations": [
+    "No microphone/audio used",
+    "No loaded-model active-meter screenshot",
+    "Screenshots verify destination/layout, not animation frame timing",
+    "No physical-device/frame-time qualification"
+  ],
+  "settings_restored": true,
+  "original_userdata_models_profiles": "unchanged",
+  "disposable_images_removed": [
+    "ui-only-userdata.img",
+    "ui-only-userdata.img.qcow2"
+  ],
+  "emulator_stopped": true,
+  "scope": "Android UI-only AVD evidence; screenshots precede removal of the stale static Settings runtime-version label. No physical-device or active-meter timing qualification.",
+  "ios": {
+    "catalystFullSourceTypecheck": {
+      "exitCode": 0,
+      "sdk": "MacOSX26.5.sdk / real Mac Catalyst frameworks",
+      "target": "arm64-apple-ios17.0-macabi",
+      "remainingWarnings": "two existing allowBluetooth deprecations"
+    },
+    "mappingTests": {
+      "exitCode": 0,
+      "framework": "real Swift Testing",
+      "sourceSha256": "e34dda2a303fd93829f8585f89c53c3f235361be35e5d538fc33ccf894eb4338",
+      "testSha256": "d389af7469f8d70383366ac756a7e2c6bc883e178ac889771d5feeac9404afca",
+      "passed": 8
+    }
+  },
+  "contrast": {
+    "background": "#142128",
+    "oldAccent": "#216B62",
+    "oldRatio": 2.617,
+    "headerAccent": "#63B3A4",
+    "ratio": 6.663
+  }
+}

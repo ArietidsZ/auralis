@@ -132,17 +132,29 @@ class TtsApi2Runtime(
      * Conditioning is explicit in these fields — never inferred from
      * embedding values.
      *
+     * The conditioning package is immutable: the array-typed properties are
+     * defensively copied at construction AND on every read, so neither the
+     * producer nor any consumer can reach the stored conditioning through a
+     * shared array reference. [embedding], [referenceTokenIds] and
+     * [referenceCodes] each hand out an independent copy; mutating a
+     * handed-out array, or the arrays passed to the constructor, can never
+     * change what [synthesizePrepared] later consumes. [referenceText] is an
+     * immutable String. The internal [vocoderWarmState] is intentionally kept
+     * by reference (it is never exposed through the public surface) and is
+     * consumed only through the engine's per-turn state builder, which copies
+     * every array, so no warm-state alias escapes the engine either.
+     *
      * A prepared reference is bound to the producing [TtsApi2Runtime] instance
      * and its loading generation: after the engine was released (and reloaded)
      * it is stale and [synthesizePrepared] rejects it; passing it to another
      * engine instance is rejected for the same reason.
      */
     class PreparedReference internal constructor(
-        val embedding: FloatArray,
-        val referenceText: String?,
-        val referenceTokenIds: IntArray?,
+        embedding: FloatArray,
+        referenceText: String?,
+        referenceTokenIds: IntArray?,
         /** Group-major [16 * frames] codec ids for the reference audio (ICL only). */
-        val referenceCodes: IntArray?,
+        referenceCodes: IntArray?,
         val referenceFrames: Int,
         /** sha256 over PCM bytes + reference text + role file identities. */
         val identity: String,
@@ -150,7 +162,18 @@ class TtsApi2Runtime(
         internal val engineToken: Any,
         internal val generation: Int,
     ) {
-        val isIcl: Boolean get() = referenceCodes != null
+        // Private snapshots: the constructor owns its own copy of the caller's
+        // arrays and every read hands out a fresh copy over that snapshot.
+        val embedding: FloatArray = embedding.copyOf()
+            get() = field.copyOf()
+        val referenceText: String? = referenceText
+        val referenceTokenIds: IntArray? = referenceTokenIds?.copyOf()
+            get() = field?.copyOf()
+        val referenceCodes: IntArray? = referenceCodes?.copyOf()
+            get() = field?.copyOf()
+
+        /** ICL conditioning is present exactly when reference codes were supplied. */
+        val isIcl: Boolean = referenceCodes != null
     }
 
     // ---- Reference preparation -------------------------------------------------
@@ -187,51 +210,59 @@ class TtsApi2Runtime(
         val cfg = config ?: throw ModelProtocol.UnsupportedModelException("TTS bundle config missing")
         val roles = manifest.roles
 
-        withContext(Dispatchers.Default) {
-            SherpaJni.load()
-            val pcm24k = SherpaJni.resample(referenceAudio, inputSampleRate, Qwen3TtsProtocol.SAMPLE_RATE)
+        try {
+            withContext(Dispatchers.Default) {
+                SherpaJni.load()
+                val pcm24k = SherpaJni.resample(referenceAudio, inputSampleRate, Qwen3TtsProtocol.SAMPLE_RATE)
 
-            // Speaker embedding: same raw, un-normalized value the API1 port consumes.
-            val embedding = runSpeakerEncoder(pcm24k)
+                // Speaker embedding: same raw, un-normalized value the API1 port consumes.
+                val embedding = runSpeakerEncoder(pcm24k)
 
-            var refTokenIds: IntArray? = null
-            var refCodes: IntArray? = null
-            var refFrames = 0
-            var warmState: VocoderWarmState? = null
-            if (referenceText != null) {
-                val tok = tokenizer ?: throw ModelProtocol.UnsupportedModelException("TTS tokenizer missing")
-                // Official reference wrapper; the prompt consumes ids[3:-2].
-                refTokenIds = tok.encode(
-                    "<|im_start|>assistant\n$referenceText<|im_end|>\n").toIntArray()
-                if (refTokenIds.size < 6) {
-                    throw ModelProtocol.UnsupportedModelException(
-                        "reference text wraps to only ${refTokenIds.size} tokens")
+                var refTokenIds: IntArray? = null
+                var refCodes: IntArray? = null
+                var refFrames = 0
+                var warmState: VocoderWarmState? = null
+                if (referenceText != null) {
+                    val tok = tokenizer ?: throw ModelProtocol.UnsupportedModelException("TTS tokenizer missing")
+                    // Official reference wrapper; the prompt consumes ids[3:-2].
+                    refTokenIds = tok.encode(
+                        "<|im_start|>assistant\n$referenceText<|im_end|>\n").toIntArray()
+                    if (refTokenIds.size < 6) {
+                        throw ModelProtocol.UnsupportedModelException(
+                            "reference text wraps to only ${refTokenIds.size} tokens")
+                    }
+                    val encodeStart = System.nanoTime()
+                    refCodes = runReferenceEncoder(pcm24k, cfg)
+                    refFrames = refCodes.size / Qwen3TtsProtocol.NUM_CODEBOOKS
+                    warmState = computeVocoderWarmState(refCodes, refFrames)
+                    Log.i(TAG, "reference prepared: frames=$refFrames " +
+                        "encodeMs=${(System.nanoTime() - encodeStart) / 1e6}")
                 }
-                val encodeStart = System.nanoTime()
-                refCodes = runReferenceEncoder(pcm24k, cfg)
-                refFrames = refCodes.size / Qwen3TtsProtocol.NUM_CODEBOOKS
-                warmState = computeVocoderWarmState(refCodes, refFrames)
-                Log.i(TAG, "reference prepared: frames=$refFrames " +
-                    "encodeMs=${(System.nanoTime() - encodeStart) / 1e6}")
+
+                // Identity binds the snapshot to its PCM, text and model files.
+                val digest = MessageDigest.getInstance("SHA-256")
+                fun feed(text: String) = digest.update(text.toByteArray(Charsets.UTF_8))
+                feed("pcm24k:")
+                val pcmBytes = ByteBuffer.allocate(pcm24k.size * 4).order(ByteOrder.LITTLE_ENDIAN)
+                pcmBytes.asFloatBuffer().put(pcm24k)
+                digest.update(pcmBytes.array())
+                feed("\ntext:${referenceText ?: ""}\n")
+                for (role in REQUIRED_ROLES) feed("$role:${roleFileIdentity(roles, role)}\n")
+                val identity = digest.digest().joinToString("") { "%02x".format(it) }
+
+                PreparedReference(
+                    embedding, referenceText, refTokenIds, refCodes, refFrames, identity, warmState,
+                    this@TtsApi2Runtime.engineToken, generation.get())
             }
-
-            // Identity binds the snapshot to its PCM, text and model files.
-            val digest = MessageDigest.getInstance("SHA-256")
-            fun feed(text: String) = digest.update(text.toByteArray(Charsets.UTF_8))
-            feed("pcm24k:")
-            val pcmBytes = ByteBuffer.allocate(pcm24k.size * 4).order(ByteOrder.LITTLE_ENDIAN)
-            pcmBytes.asFloatBuffer().put(pcm24k)
-            digest.update(pcmBytes.array())
-            feed("\ntext:${referenceText ?: ""}\n")
-            for (role in REQUIRED_ROLES) feed("$role:${roleFileIdentity(roles, role)}\n")
-            val identity = digest.digest().joinToString("") { "%02x".format(it) }
-
-            PreparedReference(
-                embedding, referenceText, refTokenIds, refCodes, refFrames, identity, warmState,
-                this@TtsApi2Runtime.engineToken, generation.get())
-        }.also {
+        } finally {
             // The reference encoder is one-shot per preparation; release it
             // eagerly so an idle engine does not hold ~190 MB of weights.
+            // finally — not success-only — so a failed ICL preparation
+            // (tokenizer, reference-encoder or warm-state validation) or a
+            // cancellation inside the block also releases the ~190 MB session
+            // instead of leaking it until release(). For xvector-only
+            // preparations the role was never loaded and releaseRole is a
+            // harmless no-op (sessions.remove(key)?.close()).
             modelManager.releaseRole(SUB_DIR, roles, "reference_encoder")
         }
     }
@@ -549,8 +580,12 @@ class TtsApi2Runtime(
                                 "past_values" to valuesTensor,
                             )).use { cpResult ->
                                 val cpLogits = readFloatOutput(cpResult, "logits")
+                                // sampleCodePredictor consumes only the last
+                                // cfg.cpVocab logits itself; pass the full
+                                // array instead of pre-slicing it (the slice
+                                // was a redundant copy on every codebook step).
                                 val token = Qwen3TtsProtocol.sampleCodePredictor(
-                                    cpLogits.copyOfRange(cpLogits.size - cfg.cpVocab, cpLogits.size),
+                                    cpLogits,
                                     cfg, Qwen3TtsProtocol.TEMPERATURE, Qwen3TtsProtocol.TOP_K, random)
                                 frame[g] = token
                                 val shape = intArrayOf(

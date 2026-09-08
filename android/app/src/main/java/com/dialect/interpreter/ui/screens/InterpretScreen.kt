@@ -8,6 +8,15 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -29,6 +38,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -72,6 +83,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -99,6 +111,7 @@ import com.dialect.interpreter.session.SessionPhase
 import com.dialect.interpreter.session.TranscriptTurn
 import com.dialect.interpreter.session.TurnStatus
 import com.dialect.interpreter.session.WorkStage
+import com.dialect.interpreter.ui.theme.AccentDarkMode
 import com.dialect.interpreter.ui.components.WaveformVisualizer
 import com.dialect.interpreter.ui.theme.AppColors
 import com.dialect.interpreter.ui.theme.RadiusBubble
@@ -223,6 +236,7 @@ fun InterpretScreen(
                 sourceLabel = sourceLabel,
                 targetLabel = targetLabel,
                 micEnabled = micEnabled,
+                reduceMotion = reduceMotion,
                 onMicClick = {
                     when {
                         uiState.isSessionActive -> viewModel.stopSession()
@@ -343,13 +357,15 @@ private fun ControlHeader(
                     color = onControl,
                     fontWeight = FontWeight.SemiBold,
                 )
-                Text(
-                    sessionSubtitle(uiState),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (uiState.phase == SessionPhase.ACTIVE) AppColors.accent() else onControlSecondary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                StatusReveal(key = sessionSubtitle(uiState), reduceMotion = reduceMotion) { subtitle ->
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (uiState.phase == SessionPhase.ACTIVE) AccentDarkMode else onControlSecondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             IconButton(onClick = onLanguageClick) {
                 Icon(
@@ -373,9 +389,15 @@ private fun ControlHeader(
                 )
             }
         }
-        if (uiState.phase == SessionPhase.ACTIVE && uiState.session.captureActive) {
+        if (uiState.phase == SessionPhase.ACTIVE && uiState.session.captureActive &&
+            // Half-duplex playback: while audio is going out, the microphone
+            // input is not being turned into a transcript (playback feeds the
+            // mic back), so the input level must not be presented as listening.
+            WorkStage.PLAYBACK !in uiState.session.activeStages
+        ) {
             Spacer(Modifier.height(8.dp))
             WaveformVisualizer(
+                accent = AccentDarkMode,
                 amplitude = uiState.amplitude,
                 isActive = true,
                 reduceMotion = reduceMotion,
@@ -404,6 +426,9 @@ private fun sessionSubtitle(uiState: InterpretUiState): String {
         SessionPhase.IDLE -> "${uiState.sessionModeLabel} · 已停止"
         SessionPhase.STARTING -> "准备模型中…"
         SessionPhase.ACTIVE -> when {
+            // Half-duplex: during playback the captured input is not being
+            // recognized, so this is never "聆听中" even though capture stays on.
+            stages.contains(WorkStage.PLAYBACK) -> "播放中"
             stageText.isNotEmpty() && uiState.session.captureActive -> "聆听中 · $stageText"
             stageText.isNotEmpty() -> "处理中 · $stageText"
             uiState.session.captureActive -> "聆听中"
@@ -411,6 +436,33 @@ private fun sessionSubtitle(uiState: InterpretUiState): String {
         }
         SessionPhase.STOPPING -> "正在停止…"
         SessionPhase.FAILED -> "会话失败"
+    }
+}
+
+/**
+ * Session-status reveal (motion spec "Session status"): a short fade with a
+ * small vertical settle when the status text changes, snapping under reduced
+ * motion. Native [AnimatedContent] only — no custom layout-affecting motion.
+ */
+@Composable
+private fun StatusReveal(
+    key: String,
+    reduceMotion: Boolean,
+    content: @Composable (String) -> Unit,
+) {
+    if (reduceMotion) {
+        content(key)
+        return
+    }
+    AnimatedContent(
+        targetState = key,
+        transitionSpec = {
+            ((fadeIn(tween(180)) + slideInVertically(tween(180)) { it / 4 }) togetherWith
+                fadeOut(tween(90))).using(null)
+        },
+        label = "statusReveal",
+    ) { target ->
+        content(target)
     }
 }
 
@@ -529,7 +581,12 @@ private fun TurnList(
             lastVisible >= info.totalItemsCount - 2
         }
     }
-    androidx.compose.runtime.LaunchedEffect(turns.size) {
+    // Keyed on the last turn's id, not the count: the snapshot list is capped
+    // (maxSnapshotTurns), so once the cap is reached appending also evicts the
+    // oldest turn and turns.size never changes — a size key would stop
+    // following new turns exactly when a session runs longest (motion spec
+    // "New conversation item": preserve reading/focus order).
+    androidx.compose.runtime.LaunchedEffect(turns.lastOrNull()?.id) {
         if (turns.isNotEmpty() && isNearBottom) {
             if (reduceMotion) listState.scrollToItem(turns.lastIndex)
             else listState.animateScrollToItem(turns.lastIndex)
@@ -543,18 +600,31 @@ private fun TurnList(
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         items(turns, key = { "${it.sessionId}-${it.id}" }) { turn ->
-            TurnRow(turn = turn)
+            // Stable turnId keys + animateItem: new turns fade in with a small
+            // displacement and reorders settle via placement spring; reduced
+            // motion disables all three (motion spec "New conversation item").
+            TurnRow(
+                turn = turn,
+                modifier = Modifier.animateItem(
+                    fadeInSpec = if (reduceMotion) null else tween(180),
+                    placementSpec = if (reduceMotion) null else spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMediumLow,
+                    ),
+                    fadeOutSpec = if (reduceMotion) null else tween(90),
+                ),
+            )
         }
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun TurnRow(turn: TranscriptTurn) {
+private fun TurnRow(turn: TranscriptTurn, modifier: Modifier = Modifier) {
     val clipboard = LocalClipboardManager.current
     val haptics = LocalHapticFeedback.current
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = modifier.fillMaxWidth()) {
         if (turn.sourceText.isNotBlank()) {
             Bubble(
                 text = turn.sourceText,
@@ -707,6 +777,7 @@ private fun InterpretBottomBar(
     sourceLabel: String,
     targetLabel: String,
     micEnabled: Boolean,
+    reduceMotion: Boolean,
     onMicClick: () -> Unit,
 ) {
     val recording = uiState.isSessionActive
@@ -733,7 +804,9 @@ private fun InterpretBottomBar(
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (recording) {
+                // Same half-duplex gate as the header waveform: during playback
+                // the red mic would claim a live listening capture.
+                if (recording && WorkStage.PLAYBACK !in uiState.session.activeStages) {
                     Icon(
                         Icons.Filled.Mic,
                         contentDescription = null,
@@ -742,20 +815,39 @@ private fun InterpretBottomBar(
                     )
                     Spacer(Modifier.width(8.dp))
                 }
-                Text(
-                    statusText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (uiState.phase == SessionPhase.FAILED) AppColors.error() else AppColors.textSecondary(),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                StatusReveal(key = statusText, reduceMotion = reduceMotion) { text ->
+                    Text(
+                        text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (uiState.phase == SessionPhase.FAILED) AppColors.error() else AppColors.textSecondary(),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             Spacer(Modifier.width(10.dp))
+            // Small press feedback on the primary action (motion spec "Main
+            // action"): one scalar animated between states and applied in the
+            // draw phase via graphicsLayer — no layout resize, disabled under
+            // reduced motion (the native ripple still runs).
+            val micInteraction = remember { MutableInteractionSource() }
+            val micPressed by micInteraction.collectIsPressedAsState()
+            val micScale = animateFloatAsState(
+                targetValue = if (micPressed && !reduceMotion) 0.94f else 1f,
+                animationSpec = tween(120),
+                label = "micPressScale",
+            )
             FilledIconButton(
                 onClick = onMicClick,
                 enabled = micEnabled,
+                interactionSource = micInteraction,
                 modifier = Modifier
                     .size(56.dp)
+                    .graphicsLayer {
+                        val scale = micScale.value // draw-phase read only
+                        scaleX = scale
+                        scaleY = scale
+                    }
                     .semantics {
                         contentDescription = if (recording) "停止录音" else "开始录音"
                     },

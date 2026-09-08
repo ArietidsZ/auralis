@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -80,9 +81,10 @@ class FetchStagingTests(unittest.TestCase):
         return fetch_model.main(["--package", package_id, "--dest", str(dest)])
 
     def stub_downloader(self, blobs: dict[str, bytes]) -> None:
-        def fake_download(repo_id: str, revision: str, repo_file: str, dest: Path) -> None:
+        def fake_download(repo_id: str, revision: str, repo_file: str, dest: Path) -> tuple[int, str]:
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_bytes(blobs[repo_file])
+            return len(blobs[repo_file]), sha_of(blobs[repo_file])
         p = mock.patch.object(fetch_model, "_download_to", fake_download)
         p.start()
         self.addCleanup(p.stop)
@@ -312,6 +314,150 @@ class FetchStagingTests(unittest.TestCase):
             self.assertEqual(self.run_fetch(dest), 0)
         self.assertEqual(len(observed), 1)
         self.assertEqual(observed[0]["files"][0]["sha256"], sha_of(b"abc"))
+
+    def test_copy_with_digest_matches_pinned_bytes(self) -> None:
+        import file_integrity
+        source = self.repo / "single-source.bin"
+        source.write_bytes(b"acquired-bytes" * 1000)
+        for stream in (False, True):
+            with self.subTest(stream=stream):
+                target = self.repo / f"copy-{stream}.bin"
+                if stream:
+                    patcher = mock.patch.object(file_integrity, "_try_clonefile", lambda a, b: False)
+                    patcher.start()
+                    self.addCleanup(patcher.stop)
+                measured = fetch_model.copy_with_digest(source, target)
+                self.assertEqual(measured, (len(source.read_bytes()), sha_of(source.read_bytes())))
+                self.assertEqual(target.read_bytes(), source.read_bytes())
+
+    def test_clone_does_not_propagate_immutable_source_flags(self) -> None:
+        """clonefile copies BSD flags: a staged file carrying immutable or
+        append-only flags could not be unlinked, replaced or removed, breaking
+        staging cleanup and rollback. Flagged sources must therefore take the
+        streaming copy, and the source itself must come out untouched."""
+        if sys.platform != "darwin":
+            self.skipTest("BSD file flags are darwin-only")
+        import stat as stat_module
+        for flag_name in ("UF_IMMUTABLE", "UF_APPEND"):
+            with self.subTest(flag=flag_name):
+                source = self.repo / f"flagged-{flag_name}.bin"
+                target = self.repo / f"flagged-{flag_name}-target.bin"
+                source.write_bytes(b"flagged-source")
+                original = os.stat(source).st_flags
+                flag = getattr(stat_module, flag_name)
+                if original & (stat_module.SF_IMMUTABLE | stat_module.SF_APPEND):
+                    self.skipTest("system flags cannot be toggled safely here")
+                try:
+                    os.chflags(source, original | flag)
+                    measured = fetch_model.copy_with_digest(source, target)
+                    self.assertEqual(measured, (len(b"flagged-source"), sha_of(b"flagged-source")))
+                    self.assertEqual(target.read_bytes(), b"flagged-source")
+                    target.unlink()  # the staged copy must be deletable/replaceable
+                    self.assertFalse(target.exists())
+                    self.assertEqual(source.read_bytes(), b"flagged-source")
+                    self.assertEqual(os.stat(source).st_flags, original | flag)
+                finally:
+                    os.chflags(source, original)
+
+    def test_transform_input_mismatch_fails_before_script_launch(self) -> None:
+        m = {"source": {"transform": {"id": fetch_model.STQ_TRANSFORM, "inputPath": "mt/translator.gguf",
+                                      "inputSha256": sha_of(b"audited-upstream-input")}},
+             "files": [{"sha256": sha_of(b"derived")}]}
+        staged = self.repo / "staged.gguf"
+        staged.write_bytes(b"not-the-audited-input")
+        with mock.patch.object(fetch_model.subprocess, "run") as command:
+            with self.assertRaises(fetch_model.IntegrityError):
+                fetch_model.apply_source_transform(m, staged, allow_derived=True,
+                                                   staged_digest=sha_of(b"not-the-audited-input"))
+        command.assert_not_called()
+
+    def test_derived_bundle_shortcut_skips_script_without_a_reread(self) -> None:
+        m = {"source": {"transform": {"id": fetch_model.STQ_TRANSFORM, "inputPath": "mt/translator.gguf",
+                                      "inputSha256": sha_of(b"audited-upstream-input")}},
+             "files": [{"sha256": sha_of(b"derived")}]}
+        staged = self.repo / "staged-derived.gguf"
+        staged.write_bytes(b"derived")
+        with mock.patch.object(fetch_model.subprocess, "run") as command:
+            self.assertIsNone(fetch_model.apply_source_transform(m, staged, allow_derived=True,
+                                staged_digest=sha_of(b"derived")))
+        command.assert_not_called()
+
+    def test_transform_output_digest_is_returned_for_the_gate(self) -> None:
+        m = {"source": {"transform": {"id": fetch_model.STQ_TRANSFORM, "inputPath": "mt/translator.gguf",
+                                      "inputSha256": sha_of(b"audited-upstream-input")}},
+             "files": [{"sha256": sha_of(b"derived")}]}
+        staged = self.repo / "staged-input.gguf"
+        staged.write_bytes(b"audited-upstream-input")
+
+        def fake_run(command, **kwargs):
+            output = Path(command[3])
+            output.write_bytes(b"derived")
+            return mock.Mock(returncode=0, stderr="")
+
+        with mock.patch.object(fetch_model.subprocess, "run", fake_run):
+            self.assertEqual(fetch_model.apply_source_transform(m, staged, allow_derived=True,
+                                staged_digest=sha_of(b"audited-upstream-input")), sha_of(b"derived"))
+        self.assertEqual(staged.read_bytes(), b"derived")
+
+    def test_build_provenance_mismatch_is_integrity_failure(self) -> None:
+        write_manifest(self.repo, manifest([
+            {"path": "asr/a.bin", "sizeBytes": 3, "sha256": sha_of(b"abc")},
+        ]))
+        self.stub_downloader({"a.bin": b"abc"})
+        with mock.patch.object(fetch_model, "verify_build_record",
+                               side_effect=fetch_model.ContractError("bad-value", "outputs differ")):
+            code = self.run_fetch(self.repo / "dest-prov")
+        self.assertEqual(code, 1, "provenance mismatch is an integrity failure, like validate_models")
+        self.assertFalse((self.repo / "dest-prov/asr").exists())
+
+    def test_update_manifest_backfill_failure_fails_request_but_keeps_install(self) -> None:
+        """--update-manifest is an explicit request: if the backfill write
+        fails, the request fails (exit 2) while the verified package stays
+        installed with its own manifest intact."""
+        data = b"installed-content"
+        write_manifest(self.repo, manifest([
+            {"path": "asr/a.bin", "sizeBytes": None, "sha256": sha_of(data)},
+        ]))
+        self.stub_downloader({"a.bin": data})
+        dest = self.repo / "dest-backfill"
+        real_write_json = fetch_model.write_json
+        shared = self.repo / "shared/model-manifests/asr.json"
+
+        def failing_backfill(path, data):
+            if path == shared:
+                raise OSError("read-only shared dir")
+            return real_write_json(path, data)
+
+        with mock.patch.object(fetch_model, "write_json", failing_backfill):
+            code = fetch_model.main(["--package", "asr", "--dest", str(dest), "--update-manifest"])
+        self.assertEqual(code, 2, "a failed explicit update request must not exit 0")
+        self.assertEqual((dest / "asr/a.bin").read_bytes(), data, "installed package stays")
+        self.assertTrue((dest / "asr/manifest.json").is_file())
+        self.assertIsNone(json.loads(shared.read_text())["files"][0]["sizeBytes"],
+                          "the shared manifest must not claim a backfill that never landed")
+
+    def test_update_manifest_noop_when_sizes_already_pinned(self) -> None:
+        """With every sizeBytes already pinned, --update-manifest is a no-op:
+        the shared manifest is not rewritten and the install exits 0."""
+        data = b"pinned-content"
+        write_manifest(self.repo, manifest([
+            {"path": "asr/a.bin", "sizeBytes": len(data), "sha256": sha_of(data)},
+        ]))
+        self.stub_downloader({"a.bin": data})
+        dest = self.repo / "dest-noop"
+        real_write_json = fetch_model.write_json
+        shared = self.repo / "shared/model-manifests/asr.json"
+        before = shared.read_text()
+
+        def no_shared_write(path, data):
+            if path == shared:
+                raise AssertionError("backfill write attempted with nothing pending")
+            return real_write_json(path, data)
+
+        with mock.patch.object(fetch_model, "write_json", no_shared_write):
+            code = fetch_model.main(["--package", "asr", "--dest", str(dest), "--update-manifest"])
+        self.assertEqual(code, 0, "nothing to backfill: the explicit request is a no-op")
+        self.assertEqual(shared.read_text(), before)
 
 
 if __name__ == "__main__":

@@ -147,5 +147,98 @@ class FailureEvidenceTests(unittest.TestCase):
             self.assertFalse((out / "logs").exists())
 
 
+
+
+@unittest.skipUnless(sys.platform != "win32", "POSIX process-group cleanup")
+class ProcessCleanupTests(unittest.TestCase):
+    def test_timeout_kills_same_group_child_and_keeps_output(self):
+        import os
+        import signal
+        import subprocess
+        import tempfile
+        import time
+        with tempfile.TemporaryDirectory() as tmp:
+            pidfile = Path(tmp) / 'child.pid'
+            child = "import signal,time; signal.signal(signal.SIGINT, signal.SIG_IGN); time.sleep(30)"
+            parent = (
+                "import subprocess,sys,time; from pathlib import Path; "
+                f"p=subprocess.Popen([sys.executable,'-c',{child!r}]); "
+                f"Path({str(pidfile)!r}).write_text(str(p.pid)); "
+                "print('child started',flush=True); time.sleep(30)"
+            )
+            reporter = Reporter()
+            result = reporter.run_cmd('tree', [sys.executable, '-u', '-c', parent], timeout=1)
+            self.assertEqual(result.status, 'fail')
+            self.assertIn('child started', reporter._raw_output['tree'][0])
+            self.assertTrue(pidfile.exists())
+            pid = int(pidfile.read_text())
+            try:
+                for _ in range(50):
+                    status = subprocess.run(['ps', '-o', 'stat=', '-p', str(pid)],
+                                            capture_output=True, text=True).stdout.strip()
+                    if not status or status.startswith('Z'):
+                        break
+                    time.sleep(0.02)
+                self.assertTrue(not status or status.startswith('Z'), status)
+            finally:
+                # Cleanup only the test-owned PID if an assertion failed.
+                if status and not status.startswith('Z'):
+                    os.kill(pid, signal.SIGKILL)
+
+    def test_outer_timeout_unwinds_actual_nested_fresh_run(self):
+        import os
+        import signal
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pidfile = root / 'runner.pid'
+            (root / 'asr_runner.py').write_text(
+                "import os,time; from pathlib import Path; "
+                f"Path({str(pidfile)!r}).write_text(str(os.getpid())); time.sleep(30)"
+            )
+            convert = SCRIPTS_DIR.parent / 'convert'
+            wrapper = (
+                "import sys; from pathlib import Path; "
+                f"sys.path.insert(0,{str(convert)!r}); "
+                "import model_tasks,validate_models; "
+                f"model_tasks.CONVERT=Path({tmp!r}); "
+                f"model_tasks.fresh_run('asr',sys.executable,[],Path({tmp!r}),60,validate_models.Report())"
+            )
+            result = Reporter().run_cmd('nested', [sys.executable, '-c', wrapper], timeout=1)
+            self.assertEqual(result.status, 'fail')
+            self.assertTrue(pidfile.exists(), 'nested runner must start before cancellation')
+            pid = int(pidfile.read_text())
+            try:
+                with self.assertRaises(ProcessLookupError):
+                    os.kill(pid, 0)
+            finally:
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+
+    def test_interruption_reaps_owned_process_and_propagates(self):
+        import os
+        import subprocess
+        from unittest.mock import patch
+        real_popen = subprocess.Popen
+        children = []
+        class InterruptedProcess(real_popen):
+            interrupted = False
+            def wait(self, timeout=None):
+                if not self.interrupted:
+                    self.interrupted = True
+                    children.append(self.pid)
+                    raise KeyboardInterrupt()
+                return super().wait(timeout=timeout)
+        with patch('verify_lib.subprocess.Popen', InterruptedProcess):
+            with self.assertRaises(KeyboardInterrupt):
+                Reporter().run_cmd('interrupt', [sys.executable, '-c',
+                                               'import time; time.sleep(30)'])
+        self.assertEqual(len(children), 1)
+        with self.assertRaises(ProcessLookupError):
+            os.kill(children[0], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

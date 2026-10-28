@@ -15,6 +15,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import signal
+import tempfile
 import shutil
 import subprocess
 import sys
@@ -51,6 +54,50 @@ class CheckResult:
     details: dict = field(default_factory=dict)
 
 
+def _run_owned_command(cmd, *, cwd, timeout, env):
+    """Bound cancellation of owned POSIX groups; let nested runners unwind.
+
+    SIGINT gives fresh_run's BaseException cleanup a chance to reap its separate
+    session. SIGKILL bounds uncooperative same-group children. Detached programs
+    that ignore cooperative cancellation are outside this guarantee.
+    """
+    if os.name != "posix":
+        return subprocess.run(cmd, cwd=cwd, timeout=timeout, env=env,
+                              capture_output=True, text=True)
+    with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
+        process = subprocess.Popen(cmd, cwd=cwd, env=env, stdout=stdout,
+                                   stderr=stderr, start_new_session=True)
+        timed_out = False
+        try:
+            process.wait(timeout=timeout)
+        except BaseException as exc:
+            timed_out = isinstance(exc, subprocess.TimeoutExpired)
+            try:
+                os.killpg(process.pid, signal.SIGINT)
+            except ProcessLookupError:
+                pass
+            try:
+                process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                pass
+            finally:
+                # The leader may have exited while same-group descendants live.
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                process.wait()
+            if not timed_out:
+                raise
+        stdout.seek(0)
+        stderr.seek(0)
+        out = stdout.read().decode("utf-8", "replace")
+        err = stderr.read().decode("utf-8", "replace")
+        if timed_out:
+            raise subprocess.TimeoutExpired(cmd, timeout, output=out, stderr=err)
+        return subprocess.CompletedProcess(cmd, process.returncode, out, err)
+
+
 class Reporter:
     def __init__(self) -> None:
         self.results: list[CheckResult] = []
@@ -78,9 +125,8 @@ class Reporter:
         command_str = " ".join(cmd)
         start = time.monotonic()
         try:
-            proc = subprocess.run(
+            proc = _run_owned_command(
                 cmd, cwd=cwd, timeout=timeout, env=env,
-                capture_output=True, text=True,
             )
         except FileNotFoundError as exc:
             return self.add(CheckResult(

@@ -131,3 +131,14 @@ docs/       build notes, specs, reports
 Application code: Apache-2.0. Models: their upstream licenses. Third-party notices: [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 Repository: [ArietidsZ/auralis](https://github.com/ArietidsZ/auralis). Planned tag page: [v0.1.0-preview.1](https://github.com/ArietidsZ/auralis/releases/tag/v0.1.0-preview.1). Notes: [docs/releases/v0.1.0-preview.1.md](docs/releases/v0.1.0-preview.1.md).
+
+### Verification timeout cleanup
+
+On POSIX hosts the verification wrapper runs each command in an owned process
+session. Timeout or interruption sends SIGINT first, allowing nested model-task
+runners to clean up their own sessions, then escalates to SIGKILL for remaining
+same-group processes after a bounded grace period. Partial stdout/stderr remain
+available in failure evidence. This is not a general sandbox: independently
+detached programs that ignore cancellation are not covered. Windows retains
+its existing direct-child timeout behavior. Lightweight process regressions
+exercise cleanup; they do not qualify model quality or physical-device budgets.

@@ -54,7 +54,7 @@ def main(argv: list[str] | None = None) -> int:
 
 def _mk(probe_id: str, ok: bool, detail: str, hint: str):
     from verify_lib import CheckResult
-    return CheckResult(probe_id, "pass" if ok else "blocked", detail if ok else hint or detail)
+    return CheckResult(probe_id, "pass" if ok else "blocked", detail if ok else "; ".join(part for part in (detail, hint) if part))
 
 
 def probe_ndk_cmake():

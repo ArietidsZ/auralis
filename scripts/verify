@@ -136,14 +136,10 @@ def run_ios(reporter: Reporter) -> None:
         return
     # Unit tests need a concrete simulator; choose one via `--json` output
     # (UDID) instead of parsing text or guessing device names.
-    import subprocess as _sp
-    from verify_lib import pick_ios_simulator
-    devices = _sp.run(["xcrun", "simctl", "list", "devices", "available", "--json"],
-                      capture_output=True, text=True).stdout
-    udid = pick_ios_simulator(devices)
-    if not udid:
-        reporter.add(CheckResult("ios-swift-tests", "blocked",
-                                 "no available iPhone simulator found on this machine"))
+    from verify_lib import probe_ios_simulator
+    simulator_ok, udid, hint = probe_ios_simulator()
+    if not simulator_ok:
+        reporter.add(CheckResult("ios-swift-tests", "blocked", f"{udid}; {hint}"))
         return
     destination = f"platform=iOS Simulator,id={udid}"
     reporter.run_cmd(
@@ -218,7 +214,7 @@ def main(argv: list[str] | None = None) -> int:
         for probe_id, probe in (("probe-python3", probe_python3), ("probe-jdk17", probe_jdk),
                                 ("probe-android-sdk", probe_android_sdk), ("probe-xcode-full", probe_xcode)):
             ok, detail, hint = probe()
-            reporter.add(CheckResult(probe_id, "pass" if ok else "blocked", detail if ok else (hint or detail)))
+            reporter.add(CheckResult(probe_id, "pass" if ok else "blocked", detail if ok else "; ".join(part for part in (detail, hint) if part)))
         run_swift_core(reporter)
         run_android(reporter)
         run_ios(reporter)

@@ -56,6 +56,8 @@ scripts/doctor                 # environment; missing Xcode/models are blocked
 scripts/verify --mode fast     # contracts, Python, Swift core — no model download
 ```
 
+Python, JDK, Xcode SDK and simulator discovery commands have a 15-second execution budget. On POSIX, timeout cleanup allows up to two additional seconds for cooperative shutdown before killing the owned process group. Launch failures, timeouts and invalid tool responses are reported as blocked, with their diagnostic and remedy preserved.
+
 Exit codes: `0` pass, `1` test/code failure, `2` missing environment/artifacts (blocked), `3` invalid contract, `4` bad arguments.
 
 With models on disk:
@@ -131,3 +133,14 @@ docs/       build notes, specs, reports
 Application code: Apache-2.0. Models: their upstream licenses. Third-party notices: [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 Repository: [ArietidsZ/auralis](https://github.com/ArietidsZ/auralis). Planned tag page: [v0.1.0-preview.1](https://github.com/ArietidsZ/auralis/releases/tag/v0.1.0-preview.1). Notes: [docs/releases/v0.1.0-preview.1.md](docs/releases/v0.1.0-preview.1.md).
+
+### Verification timeout cleanup
+
+On POSIX hosts the verification wrapper runs each command in an owned process
+session. Timeout or interruption sends SIGINT first, allowing nested model-task
+runners to clean up their own sessions, then escalates to SIGKILL for remaining
+same-group processes after a bounded grace period. Partial stdout/stderr remain
+available in failure evidence. This is not a general sandbox: independently
+detached programs that ignore cancellation are not covered. Windows retains
+its existing direct-child timeout behavior. Lightweight process regressions
+exercise cleanup; they do not qualify model quality or physical-device budgets.

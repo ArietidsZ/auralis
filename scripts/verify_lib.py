@@ -15,6 +15,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
+import signal
+import tempfile
 import shutil
 import subprocess
 import sys
@@ -51,6 +55,50 @@ class CheckResult:
     details: dict = field(default_factory=dict)
 
 
+def _run_owned_command(cmd, *, cwd, timeout, env):
+    """Bound cancellation of owned POSIX groups; let nested runners unwind.
+
+    SIGINT gives fresh_run's BaseException cleanup a chance to reap its separate
+    session. SIGKILL bounds uncooperative same-group children. Detached programs
+    that ignore cooperative cancellation are outside this guarantee.
+    """
+    if os.name != "posix":
+        return subprocess.run(cmd, cwd=cwd, timeout=timeout, env=env,
+                              capture_output=True, text=True)
+    with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
+        process = subprocess.Popen(cmd, cwd=cwd, env=env, stdout=stdout,
+                                   stderr=stderr, start_new_session=True)
+        timed_out = False
+        try:
+            process.wait(timeout=timeout)
+        except BaseException as exc:
+            timed_out = isinstance(exc, subprocess.TimeoutExpired)
+            try:
+                os.killpg(process.pid, signal.SIGINT)
+            except ProcessLookupError:
+                pass
+            try:
+                process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                pass
+            finally:
+                # The leader may have exited while same-group descendants live.
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                process.wait()
+            if not timed_out:
+                raise
+        stdout.seek(0)
+        stderr.seek(0)
+        out = stdout.read().decode("utf-8", "replace")
+        err = stderr.read().decode("utf-8", "replace")
+        if timed_out:
+            raise subprocess.TimeoutExpired(cmd, timeout, output=out, stderr=err)
+        return subprocess.CompletedProcess(cmd, process.returncode, out, err)
+
+
 class Reporter:
     def __init__(self) -> None:
         self.results: list[CheckResult] = []
@@ -78,9 +126,8 @@ class Reporter:
         command_str = " ".join(cmd)
         start = time.monotonic()
         try:
-            proc = subprocess.run(
+            proc = _run_owned_command(
                 cmd, cwd=cwd, timeout=timeout, env=env,
-                capture_output=True, text=True,
             )
         except FileNotFoundError as exc:
             return self.add(CheckResult(
@@ -206,14 +253,35 @@ def _tail(stdout: str, stderr: str, limit: int = 1200) -> str:
 # environment probes (used by doctor; verify reuses them for blocked reasons)
 # ---------------------------------------------------------------------------
 
+PROBE_TIMEOUT_SECONDS = 15
+
+
+def _probe_command(cmd: list[str]) -> tuple[subprocess.CompletedProcess | None, str]:
+    """Bound tool discovery with the same process ownership as verification."""
+    try:
+        result = _run_owned_command(cmd, cwd=REPO_ROOT,
+                                    timeout=PROBE_TIMEOUT_SECONDS, env=None)
+    except subprocess.TimeoutExpired:
+        return None, f"{cmd[0]} probe timed out after {PROBE_TIMEOUT_SECONDS}s"
+    except OSError as exc:
+        return None, f"{cmd[0]} probe could not start: {exc}"
+    if result.returncode != 0:
+        return None, f"{cmd[0]} probe exited {result.returncode}: {_tail(result.stdout, result.stderr)}"
+    return result, ""
+
+
 def probe_python3() -> tuple[bool, str, str]:
     path = shutil.which("python3")
     if not path:
         return False, "python3 not found on PATH", "Install Python 3.10+ (e.g. brew install python)"
-    proc = subprocess.run([path, "--version"], capture_output=True, text=True)
+    proc, error = _probe_command([path, "--version"])
+    if proc is None:
+        return False, error, "Check Python installation and retry"
     version = (proc.stdout or proc.stderr).strip()
-    minor = version.split()[-1].split(".") if version else ["0", "0"]
-    ok = proc.returncode == 0 and int(minor[0]) >= 3 and int(minor[1]) >= 10
+    match = re.fullmatch(r"Python (\d+)\.(\d+)(?:\.\S+)?", version)
+    if not match:
+        return False, version, "Could not parse Python version; Python 3.10+ required"
+    ok = (int(match.group(1)), int(match.group(2))) >= (3, 10)
     return ok, version, "" if ok else "Python 3.10+ required"
 
 
@@ -221,7 +289,9 @@ def probe_jdk() -> tuple[bool, str, str]:
     path = shutil.which("java")
     if not path:
         return False, "java not found on PATH", "Install JDK 17 (e.g. brew install --cask temurin@17)"
-    proc = subprocess.run([path, "-version"], capture_output=True, text=True)
+    proc, error = _probe_command([path, "-version"])
+    if proc is None:
+        return False, error, "Check JDK installation and retry"
     text = (proc.stderr or proc.stdout).splitlines()[0] if (proc.stderr or proc.stdout) else ""
     import re as _re
     match = _re.search(r'version "(\d+)', text)
@@ -259,9 +329,9 @@ def probe_xcode(full_only: bool = True) -> tuple[bool, str, str]:
     path = shutil.which("xcodebuild")
     if not path:
         return False, "xcodebuild not found", "Install full Xcode from the App Store, then: sudo xcode-select -s /Applications/Xcode.app"
-    proc = subprocess.run([path, "-showsdks"], capture_output=True, text=True)
-    if proc.returncode != 0:
-        return False, "xcodebuild -showsdks failed", "Install full Xcode; the current toolchain appears to be CommandLineTools only"
+    proc, error = _probe_command([path, "-showsdks"])
+    if proc is None:
+        return False, error, "Check full Xcode installation and retry"
     has_ios_sim = any("iphonesimulator" in line for line in proc.stdout.splitlines())
     if full_only and not has_ios_sim:
         return False, "no iphonesimulator SDK (CommandLineTools only)", "Install full Xcode from the App Store, then: sudo xcode-select -s /Applications/Xcode.app"
@@ -281,6 +351,8 @@ def pick_ios_simulator(simctl_json: str) -> str | None:
         data = json.loads(simctl_json)
     except json.JSONDecodeError:
         return None
+    if not isinstance(data, dict):
+        return None
     devices = data.get("devices")
     if not isinstance(devices, dict):
         return None
@@ -294,11 +366,31 @@ def pick_ios_simulator(simctl_json: str) -> str | None:
             if not isinstance(entry, dict) or entry.get("isAvailable") is not True:
                 continue
             udid = entry.get("udid")
-            if not udid or "iPhone" not in str(entry.get("name", "")):
+            name = entry.get("name")
+            if not isinstance(udid, str) or not udid.strip() or not isinstance(name, str) or "iPhone" not in name:
                 continue
             if best is None or version > best[0]:
                 best = (version, udid)
     return best[1] if best else None
+
+
+def probe_ios_simulator() -> tuple[bool, str, str]:
+    path = shutil.which("xcrun")
+    if not path:
+        return False, "xcrun not found", "Install full Xcode and an iPhone simulator"
+    proc, error = _probe_command([path, "simctl", "list", "devices", "available", "--json"])
+    if proc is None:
+        return False, error, "Check CoreSimulator and retry"
+    try:
+        payload = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return False, "simctl returned malformed JSON", "Check CoreSimulator and retry"
+    if not isinstance(payload, dict) or not isinstance(payload.get("devices"), dict):
+        return False, "simctl returned an invalid devices object", "Check CoreSimulator and retry"
+    udid = pick_ios_simulator(proc.stdout)
+    if not udid:
+        return False, "no available iPhone simulator found", "Install an iPhone simulator in Xcode"
+    return True, udid, ""
 
 
 def probe_model_assets() -> tuple[bool, str, str]:
